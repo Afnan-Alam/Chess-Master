@@ -1,0 +1,194 @@
+/* Reset default spacing and set box-sizing */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base fonts */
+body {
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #2c3e50, #bdc3c7);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  overflow-y: auto;
+}
+
+/* Card container that fills most of the screen */
+.card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 20px 30px;
+  width: 90%;
+  max-width: 800px;
+  min-height: 60vh;
+  margin: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* so heading is higher up */
+}
+
+/* Distinct style for the site title */
+.site-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  color: #2c3e50;
+  letter-spacing: 1px;
+}
+
+/* Add more spacing above the signup section for clarity */
+#signup-section {
+  margin-top: 40px;
+}
+
+/* Headings styling */
+h2, h3 {
+  margin-bottom: 20px;
+}
+
+/* Form styling */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input[type="text"],
+input[type="password"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #3498db;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+/* Chess board styling */
+#chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  border: 3px solid #333;
+  margin: 20px auto;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Larger piece font size */
+.square {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5em; /* increased for better visibility */
+  cursor: pointer;
+}
+
+.chess-piece{
+  width: 90%;
+  aspect-ratio: 1 / 1;
+  align-items: center;
+  justify-content: center
+}
+
+/* Distinguish squares */
+.light {
+  background-color: #ecf0f1;
+}
+
+.dark {
+  background-color: #34495e;
+  color: #fff;
+}
+
+/* If you add black-piece or white-piece classes, define them here:
+   e.g. for even stronger contrast:
+.black-piece {
+  color: #000 !important;
+}
+.white-piece {
+  color: #fdfdfd !important;
+}
+*/
+
+#game-info {
+  margin-top: 15px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+#mode-selection {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+#mode-selection button {
+  flex: 1;
+  margin: 0 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .card {
+    width: 95%;
+    padding: 15px;
+    min-height: 55vh;
+  }
+  .site-title {
+    font-size: 2rem;
+  }
+  .square {
+    font-size: 2em;
+  }
+}
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.popup-box {
+  background: white;
+  padding: 20px 40px;
+  border-radius: 8px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  font-size: 24px;
+}
+
+.close-btn {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  font-size: 24px;
+  cursor: pointer;
+}
