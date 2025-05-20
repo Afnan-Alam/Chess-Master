@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let board = [];
     let currentTurn = 'white'; // white starts
     let selectedSquare = null;
-    let gameMode = null; // either 'sandbox', 'raeed', or 'afnan'
+    let gameMode = null; // either 'sandbox', 'random', or 'afnan'
     
     // Mapping piece type and color to Unicode symbols
     //Need to add actual pictures for the pieces
@@ -241,7 +241,121 @@ document.addEventListener('DOMContentLoaded', () => {
       return eval;
     }
     
-    // A simple bot move (using random move selection for Raeed and a slightly smarter selection for Afnan).
+function generateMoves(i, piece, board) {
+  const directions = [];
+
+  const isOpponent = (target) => board[target] && board[target].color !== piece.color;
+
+  const sameRow = (a, b) => Math.floor(a / 8) === Math.floor(b / 8);
+
+  const tryAdd = (to) => {
+    if (to >= 0 && to < 64 && (!board[to] || isOpponent(to))) {
+      directions.push(to);
+    }
+  };
+
+  if (piece.type === 'P') {
+    const dir = piece.color === 'white' ? -8 : 8;
+    const startRow = piece.color === 'white' ? 6 : 1;
+
+    if (!board[i + dir]) {
+      directions.push(i + dir);
+      if (Math.floor(i / 8) === startRow && !board[i + dir * 2]) {
+        directions.push(i + dir * 2);
+      }
+    }
+
+    // Captures
+    const captureOffsets = piece.color === 'white' ? [7, 9] : [-7, -9];
+    for (let offset of captureOffsets) {
+      const to = i + offset;
+      if (
+        to >= 0 &&
+        to < 64 &&
+        board[to] &&
+        isOpponent(to) &&
+        Math.abs((to % 8) - (i % 8)) === 1
+      ) {
+        directions.push(to);
+      }
+    }
+  }
+
+  else if (piece.type === 'R' || piece.type === 'Q') {
+    // Vertical & horizontal
+    const vectors = [8, -8, 1, -1];
+    for (let v of vectors) {
+      let x = 1;
+      while (true) {
+        const to = i + v * x;
+        if (to < 0 || to >= 64) break;
+        if ((v === 1 || v === -1) && !sameRow(i, to)) break;
+
+        if (!board[to]) {
+          directions.push(to);
+        } else if (isOpponent(to)) {
+          directions.push(to);
+          break;
+        } else {
+          break;
+        }
+        x++;
+      }
+    }
+  }
+
+  if (piece.type === 'B' || piece.type === 'Q') {
+    // Diagonals
+    const vectors = [9, -9, 7, -7];
+    for (let v of vectors) {
+      let x = 1;
+      while (true) {
+        const to = i + v * x;
+        if (to < 0 || to >= 64) break;
+        if (Math.abs((to % 8) - (i % 8)) !== x) break;
+
+        if (!board[to]) {
+          directions.push(to);
+        } else if (isOpponent(to)) {
+          directions.push(to);
+          break;
+        } else {
+          break;
+        }
+        x++;
+      }
+    }
+  }
+
+  if (piece.type === 'N') {
+    const offsets = [15, 17, 6, 10, -15, -17, -6, -10];
+    for (let offset of offsets) {
+      const to = i + offset;
+      if (
+        to >= 0 &&
+        to < 64 &&
+        Math.abs((to % 8) - (i % 8)) <= 2
+      ) {
+        tryAdd(to);
+      }
+    }
+  }
+
+  if (piece.type === 'K') {
+    const offsets = [-1, 1, -8, 8, -7, -9, 7, 9];
+    for (let offset of offsets) {
+      const to = i + offset;
+      if (to >= 0 && to < 64 && Math.abs((to % 8) - (i % 8)) <= 1) {
+        tryAdd(to);
+      }
+    }
+  }
+
+  return directions;
+}
+
+
+    // A simple bot move (using random move selection for random and a slightly smarter selection for Afnan).
     function botMove() {
       let possibleMoves = [];
       let currEval = eval(board);
@@ -249,49 +363,22 @@ document.addEventListener('DOMContentLoaded', () => {
       let maxEval = currEval;
       
       for (let i = 0; i < 64; i++) {
+        if (!board[i]){
+          continue;
+        }
         const piece = board[i];
         if (piece && piece.color === botColor()) {
           // For demonstration, generate potential moves by trying each adjacent square.
-          let directions = [];
-          if (i == 0){
-            directions = [1, 8, 9];
-          }
-          else if (i == 7){
-            directions = [-1, 7, 8];
-          }
-          else if (i == 56){
-            directions = [-8, -7, 1];
-          }
-          else if (i == 63){
-            directions = [-9, -8, -1];
-          }
-          else if (i%8 == 0){
-            directions = [-8, -7, 1,8, 9];
-          }
-          else if ((i+1)%8 == 0){
-            directions = [-9, -8, -1, 7, 8];
-          }
-          else if (i<8){
-            directions = [-1, 1, 7, 8, 9];
-          }
-          else if (i>55){
-            directions = [-9, -8, -7, -1, 1];
-          }
-          else{
-            directions = [-9, -8, -7, -1, 1, 7, 8, 9];
-          }
+          let directions = generateMoves(i, piece, board);
+
           directions.forEach(dir => {
-            const target = i + dir;
-            if (target >= 0 && target < 64) {
-              if (!board[target] || board[target].color !== botColor()) {
-                possibleMoves.push({ from: i, to: target });
-                if (gameMode === 'afnan'){
-                  let testEval = currEval + points(board[target])
-                  if (testEval > maxEval){
-                    bestMove = {from:i, to:target}
-                    maxEval = testEval;
-                  }
-                }
+            const target = dir;
+            possibleMoves.push({ from: i, to: target });
+            if (gameMode === 'afnan'){
+              let testEval = currEval + points(board[target])
+              if (testEval > maxEval){
+                bestMove = {from:i, to:target}
+                maxEval = testEval;
               }
             }
           });
@@ -299,8 +386,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (possibleMoves.length > 0) {
         let move;
-        if (gameMode === 'raeed') {
-          // Raeed: purely random move.
+        if (gameMode === 'random') {
+          // random: purely random move.
           move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
         } else if (gameMode === 'afnan') {
           if (bestMove == null){
@@ -339,8 +426,8 @@ document.addEventListener('DOMContentLoaded', () => {
       gameMode = 'sandbox';
       startChessGame();
     });
-    document.getElementById('raeed-btn').addEventListener('click', () => {
-      gameMode = 'raeed';
+    document.getElementById('random-btn').addEventListener('click', () => {
+      gameMode = 'random';
       startChessGame();
     });
     document.getElementById('afnan-btn').addEventListener('click', () => {
@@ -356,3 +443,237 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
+
+
+
+
+
+
+
+
+  /* 
+  Temporary stuff:
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Old Directions algorithm (missing some stuff)
+
+            let directions = [];
+
+          if (piece.type === 'P'){
+            if (piece.color === 'white'){
+              if (!board[i+8]){
+                directions.push(i+8);
+                if (Math.floor(i/8) == 1 && !board[i + 16]){
+                  directions.push(i+16);
+                }
+              } 
+            }
+            else if (piece.color === 'black'){
+              if (!board[i-8]){
+                directions.push(i-8);
+                if (Math.floor(i/8) == 6 && !board[i - 16]){
+                  directions.push(i-16);
+                }
+              } 
+            }
+          }
+
+          else if (piece.type === 'R'){
+            let x = 1;
+            while((i+x*8) < 64 && !board[i+x*8]){
+              directions.push(i + x*8);
+              x++;
+            }
+            if ((i+x*8) < 64 && board[i+x*8] && board[i+x*8].color === 'white'){
+              directions.push(i+x*8);
+            }
+            x = 1;
+            while((i-x*8) >= 0 && !board[i-x*8]){
+              directions.push(i - x*8);
+              x++;
+            }
+            if ((i-x*8) >= 0 && board[i-x*8] && board[i-x*8].color === 'white'){
+              directions.push(i-x*8);
+            }
+            x = 1;
+            while((i+x)%8 > i%8 && !board[i+x]){
+              directions.push(i + x);
+              x++;
+            }
+            if ((i+x)%8 > i%8 && board[i+x] && board[i+x].color === 'white'){
+              directions.push(i+x);
+            }
+            x = 1;
+            while((i-x)%8 < i%8 && !board[i-x]){
+              directions.push(i - x);
+              x++;
+            }
+            if ((i-x)%8 && board[i-x] && board[i-x].color === 'white'){
+              directions.push(i-x);
+            }
+          }
+
+          else if (piece.type === 'B'){
+            let x = 1;
+            while((i+x*9) < 64 && (i + x*9)%8 > i%8 && !board[i+x*9]){
+              directions.push(i + x*9);
+              x++;
+            }
+            if ((i+x*9) < 64 && (i + x*9)%8 > i%8 && board[i+x*9] && board[i+x*9].color === 'white'){
+              directions.push(i + x*9);
+            }
+            x = 1;
+            while((i-x*9) >= 0 && (i - x*9)%8 < i%8 && !board[i-x*9]){
+              directions.push(i - x*9);
+              x++;
+            }
+            if ((i-x*9) >= 0 && (i - x*9)%8 < i%8 && board[i-x*9] && board[i-x*9].color === 'white'){
+              directions.push(i - x*9);
+            }
+            x = 1;
+            while((i+x*7) < 64 && (i + x*7)%8 < i%8 && !board[i+x*7]){
+              directions.push(i + x*7);
+              x++;
+            }
+            if ((i+x*7) < 64 && (i + x*7)%8 < i%8 && board[i + x*7] && board[i + x*7].color === 'white'){
+              directions.push(i + x*7);
+            }
+            x = 1;
+            while((i-x*7) >= 0 && (i - x*7)%8 > i%8 && !board[i-x*7]){
+              directions.push(i - x*7);
+              x++;
+            }
+            if ((i-x*7) >= 0 && (i - x*7)%8 > i%8 && board[i-x*7] && board[i-x*7].color === 'white'){
+              directions.push(i - x*7);
+            }
+          }
+
+          else if (piece.type === 'N'){
+            if (i%8 != 7 && i + 16 <64 && (!board[i+17] || board[i+17].color === 'white')){
+              directions.push(i+17);
+            }
+            if (i%8 != 0 && i + 16 <64 && (!board[i+15] || board[i+15].color === 'white')){
+              directions.push(i+15);
+            }
+            if (i%8 != 7 && i - 16 >= 0 && (!board[i-15] || board[i-15].color === 'white')){
+              directions.push(i-15);
+            }
+            if (i%8 != 0 && i - 16 >= 0 && (!board[i-17] || board[i-17].color === 'white')){
+              directions.push(i-17);
+            }
+
+
+            if ((i+2)%8 > i%8 && i + 8 <64 && (!board[i+10] || board[i+10].color === 'white')){
+              directions.push(i+10);
+            }
+            if ((i-2)%8 < i%8 && i + 8 <64 && (!board[i+6] || board[i+6].color === 'white')){
+              directions.push(i+6);
+            }
+            if ((i+2)%8 > i%8 && i - 8 >= 0 && (!board[i-6]|| board[i-6].color === 'white')){
+              directions.push(i-6);
+            }
+            if ((i-2)%8 < i%8 && i - 8 >= 0 && (!board[i-10]|| board[i-10].color === 'white')){
+              directions.push(i-10);
+            }
+          }
+
+          else if (piece.type === 'Q'){
+            //Rook
+            let x = 1;
+            while((i+x*8) < 64 && !board[i+x*8]){
+              directions.push(i + x*8);
+              x++;
+            }
+            if ((i+x*8) < 64 && board[i+x*8] && board[i+x*8].color === 'white'){
+              directions.push(i+x*8);
+            }
+            x = 1;
+            while((i-x*8) >= 0 && !board[i-x*8]){
+              directions.push(i - x*8);
+              x++;
+            }
+            if ((i-x*8) >= 0 && board[i-x*8] && board[i-x*8].color === 'white'){
+              directions.push(i-x*8);
+            }
+            x = 1;
+            while((i+x)%8 > i%8 && !board[i+x]){
+              directions.push(i + x);
+              x++;
+            }
+            if ((i+x)%8 > i%8 && board[i+x] && board[i+x].color === 'white'){
+              directions.push(i+x);
+            }
+            x = 1;
+            while((i-x)%8 < i%8 && !board[i-x]){
+              directions.push(i - x);
+              x++;
+            }
+            if ((i-x)%8 && board[i-x] && board[i-x].color === 'white'){
+              directions.push(i-x);
+            }
+
+            //Bishop
+            x = 1;
+            while((i+x*9) < 64 && (i + x*9)%8 > i%8 && !board[i+x*9]){
+              directions.push(i + x*9);
+              x++;
+            }
+            if ((i+x*9) < 64 && (i + x*9)%8 > i%8 && board[i+x*9] && board[i+x*9].color === 'white'){
+              directions.push(i + x*9);
+            }
+            x = 1;
+            while((i-x*9) >= 0 && (i - x*9)%8 < i%8 && !board[i-x*9]){
+              directions.push(i - x*9);
+              x++;
+            }
+            if ((i-x*9) >= 0 && (i - x*9)%8 < i%8 && board[i-x*9] && board[i-x*9].color === 'white'){
+              directions.push(i - x*9);
+            }
+            x = 1;
+            while((i+x*7) < 64 && (i + x*7)%8 < i%8 && !board[i+x*7]){
+              directions.push(i + x*7);
+              x++;
+            }
+            if ((i+x*7) < 64 && (i + x*7)%8 < i%8 && board[i + x*7] && board[i + x*7].color === 'white'){
+              directions.push(i + x*7);
+            }
+            x = 1;
+            while((i-x*7) >= 0 && (i - x*7)%8 > i%8 && !board[i-x*7]){
+              directions.push(i - x*7);
+              x++;
+            }
+            if ((i-x*7) >= 0 && (i - x*7)%8 > i%8 && board[i-x*7] && board[i-x*7].color === 'white'){
+              directions.push(i - x*7);
+            }
+          }
+
+          else if (piece.type === 'K'){
+            if (!(i%8 == 0) && (!board[i-1] || board[i-1].color === 'white')){
+              directions.push(i-1);
+            }
+            if (!(i%8==7) && (!board[i+1] || board[i+1].color === 'white')){
+              directions.push(i+1);
+            }
+            if (i-8 >= 0 && (!board[i-8] || board[i-8].color === 'white')){
+              directions.push(i-8);
+            }
+            if (i+8 < 64 && (!board[i+8] || board[i+8].color === 'white')){
+              directions.push(i+8);
+            }
+            if (i-7 >= 0 && (i-7)%8 != 0 && (!board[i-7] || board[i-7].color === 'white')){
+              directions.push(i-7);
+            }
+            if (i-9 >= 0 && (i-9)%8 != 7 && (!board[i-9] || board[i-9].color === 'white')){
+              directions.push(i-9);
+            }
+            if (i+7 < 64 && (i+7)%8 != 0 && (!board[i+7] || board[i+7].color === 'white')){
+              directions.push(i+7);
+            }
+            if (i+9 < 64 && (i+9)%8 != 7 && (!board[i+9] || board[i+9].color === 'white')){
+              directions.push(i+9);
+            }
+          }
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  */
