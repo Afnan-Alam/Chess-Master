@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameDiv = document.getElementById('game');
     const userNameSpan = document.getElementById('user-name');
     const depth = 10;
+    const popup = document.getElementById('game-over-popup');
+    const moveKingInCheckPopup = document.getElementById('moveKingInCheck-popup');
+
+    let whiteKingIndex = 60;
+    let blackKingIndex = 4;
 
     // LOG IN AND SIGN UP UI
     
@@ -73,10 +78,15 @@ document.addEventListener('DOMContentLoaded', () => {
       userNameSpan.textContent = username;
     }
     function gameOver() {
-      const popup = document.getElementById('game-over-popup');
       popup.style.display = 'flex';
       document.getElementById('close-popup').addEventListener('click', () => {
         popup.style.display = 'none';
+      });
+    }
+    function moveToCheck() {
+      moveKingInCheckPopup.style.display = 'flex';
+      document.getElementById('moveIntoCheck-popup').addEventListener('click', () => {
+        moveKingInCheckPopup.style.display = 'none';
       });
     }
     
@@ -163,53 +173,94 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Handle clicks on a square: select a piece or attempt a move.
-    function handleSquareClick(e) {
-      const index = parseInt(e.currentTarget.dataset.index);
-      const piece = board[index];
-      if (selectedSquare === null) {
-        // Select a piece if it belongs to the current player
-        if (piece && piece.color === currentTurn) {
-          selectedSquare = index;
-          renderBoard();
-        }
+function handleSquareClick(e) {
+  const index = parseInt(e.currentTarget.dataset.index);
+  const piece = board[index];
+
+  moveKingInCheckPopup.style.display = 'none';
+  if (selectedSquare === null) {
+    if (piece && piece.color === currentTurn) {
+      selectedSquare = index;
+      renderBoard();
+    }
+  } else {
+    if (selectedSquare === index) {
+      selectedSquare = null;
+      renderBoard();
+      return;
+    }
+
+    const movingPiece = board[selectedSquare];
+
+    // Prevent moving to your own piece
+    if (piece && piece.color === currentTurn) {
+      selectedSquare = index;
+      renderBoard();
+      return;
+    }
+
+    // Check if move is legal by simulating it
+    const tempFrom = board[selectedSquare];
+    const tempTo = board[index];
+    board[index] = tempFrom;
+    board[selectedSquare] = null;
+
+    // Find new king position (especially if king moved)
+    let currKingIndex = movingPiece.type === 'K' ? index : (movingPiece.color === 'white' ? whiteKingIndex : blackKingIndex);
+    let kingSafe = !isSquareAttacked(currKingIndex, botColor());
+    console.log(kingSafe);
+
+    // Undo move
+    board[selectedSquare] = tempFrom;
+    board[index] = tempTo;
+
+    if (!kingSafe) {
+      console.log("Illegal move: You can't leave your king in check.");
+      moveToCheck();
+      return;
+    }
+
+    // Now apply move for real
+    if (movingPiece.type === 'K') {
+      if (movingPiece.color === 'white') {
+        whiteKingIndex = index;
       } else {
-        // Clicking the same square deselects
-        if (selectedSquare === index) {
-          selectedSquare = null;
-          renderBoard();
-          return;
-        }
-        // Basic move validation: disallow moving to a square occupied by a friendly piece.
-        const movingPiece = board[selectedSquare];
-        if (piece && piece.color === currentTurn) {
-          selectedSquare = index;
-          renderBoard();
-          return;
-        }
-        // In a full implementation, you would call your Node.js back‑end (with your chess algorithm)
-        // to validate the move. For now, we simply update the board state.
-        if (piece && piece.type === 'K'){
-          gameOver();
-          board[index] = movingPiece;
-          board[selectedSquare] = null;
-          selectedSquare = null;
-        }
-        else{
-          board[index] = movingPiece;
-          board[selectedSquare] = null;
-          selectedSquare = null;
-        }
-        
-        // Switch turn
-        currentTurn = (currentTurn === 'white') ? 'black' : 'white';
-        renderBoard();
-        
-        // If playing against a bot and it's now the bot’s turn, have it move.
-        if (gameMode !== 'sandbox' && currentTurn === botColor()) {
-          setTimeout(botMove, 500);
-        }
+        blackKingIndex = index;
       }
     }
+
+    board[index] = movingPiece;
+    board[selectedSquare] = null;
+    selectedSquare = null;
+
+    // Check if king is captured
+    if (piece && piece.type === 'K') {
+      gameOver();
+    }
+
+    currentTurn = currentTurn === 'white' ? 'black' : 'white';
+    renderBoard();
+
+    // Bot move
+    if (gameMode !== 'sandbox' && currentTurn === botColor()) {
+      setTimeout(botMove, 500);
+    }
+  }
+}
+
+function isSquareAttacked(index, attackerColor) {
+  for (let i = 0; i < 64; i++) {
+    const attacker = board[i];
+    if (attacker && attacker.color === attackerColor) {
+      const moves = generateMoves(i, attacker, board);
+      if (moves.includes(index)) return true;
+    }
+  }
+  return false;
+}
+
+    
+
     
     function botColor() {
       // In bot games we assume the human is white.
@@ -295,7 +346,7 @@ function generateMoves(i, piece, board) {
     }
 
     // Captures
-    const captureOffsets = piece.color === 'white' ? [7, 9] : [-7, -9];
+    const captureOffsets = piece.color !== 'white' ? [7, 9] : [-7, -9];
     for (let offset of captureOffsets) {
       const to = i + offset;
       if (
