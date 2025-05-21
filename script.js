@@ -266,6 +266,7 @@ function getFen(board) {
       count++;
     }
   }
+  fen += " b - - 0 1";
   return fen;
 }
 
@@ -382,6 +383,26 @@ function generateMoves(i, piece, board) {
   return directions;
 }
 
+function letToNum(letter) {
+  let conversion = {
+    'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7
+  }
+  return conversion[letter[0]] + (8 - parseInt(letter[1])) * 8;
+}
+
+async function getBestMove(fen){
+  let url = `https://stockfish.online/api/s/v2.php?fen=${encodeURIComponent(fen)}&depth=${depth}`;
+  let response = await fetch (url);
+  let data = await response.json();
+  let bestMoveString = data.bestmove;
+  let parts = bestMoveString.split(' ');
+  let move = parts[1];
+  let fromLet = move.substring(0, 2);
+  let toLet = move.substring(2, 4);
+  let from = letToNum(fromLet);
+  let to = letToNum(toLet);
+  return {from: from, to: to};
+}
 
     // A simple bot move function
     function botMove() {
@@ -402,6 +423,12 @@ function generateMoves(i, piece, board) {
           directions.forEach(dir => {
             const target = dir;
             possibleMoves.push({ from: i, to: target });
+            //Here
+            if (board[possibleMoves.to] && board[possibleMoves.to].type === 'K'){
+              gameOver();
+              currentTurn = 'white';
+              renderBoard();
+            }
             if (gameMode === 'easy'){
               let testEval = currEval + points(board[target])
               if (testEval > maxEval){
@@ -418,9 +445,22 @@ function generateMoves(i, piece, board) {
           //hard: Play an engine move
           move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
           let fen = getFen(board);
-          console.log(fen);
-          // let bestMove = getBestMove(fen, depth);
-          // move = bestMove;          
+          getBestMove(fen).then(bestMove =>{
+            move = bestMove;
+          if (board[move.to] && board[move.to].type === 'K'){
+            gameOver();
+            board[move.to] = board[move.from];
+            board[move.from] = null;
+            currentTurn = 'white';
+            renderBoard();
+          }
+          else{
+            board[move.to] = board[move.from];
+            board[move.from] = null;
+            currentTurn = 'white';
+            renderBoard();
+          }  
+          });     
         } else if (gameMode === 'easy') {
           if (bestMove == null){
             move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
@@ -434,19 +474,19 @@ function generateMoves(i, piece, board) {
           // move = (captureMoves.length > 0) ?
           //   captureMoves[Math.floor(Math.random() * captureMoves.length)] :
           //   possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-        }
-        if (board[move.to] && board[move.to].type === 'K'){
-          gameOver();
-          board[move.to] = board[move.from];
-          board[move.from] = null;
-          currentTurn = 'white';
-          renderBoard();
-        }
-        else{
-        board[move.to] = board[move.from];
-        board[move.from] = null;
-        currentTurn = 'white';
-        renderBoard();
+          if (board[move.to] && board[move.to].type === 'K'){
+            gameOver();
+            board[move.to] = board[move.from];
+            board[move.from] = null;
+            currentTurn = 'white';
+            renderBoard();
+          }
+          else{
+            board[move.to] = board[move.from];
+            board[move.from] = null;
+            currentTurn = 'white';
+            renderBoard();
+          }
         }
       }
     }
@@ -474,238 +514,3 @@ function generateMoves(i, piece, board) {
       renderBoard();
     }
   });
-  
-
-
-
-
-
-
-
-
-  /* 
-  Temporary stuff:
------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Old Directions algorithm (missing some stuff)
-
-            let directions = [];
-
-          if (piece.type === 'P'){
-            if (piece.color === 'white'){
-              if (!board[i+8]){
-                directions.push(i+8);
-                if (Math.floor(i/8) == 1 && !board[i + 16]){
-                  directions.push(i+16);
-                }
-              } 
-            }
-            else if (piece.color === 'black'){
-              if (!board[i-8]){
-                directions.push(i-8);
-                if (Math.floor(i/8) == 6 && !board[i - 16]){
-                  directions.push(i-16);
-                }
-              } 
-            }
-          }
-
-          else if (piece.type === 'R'){
-            let x = 1;
-            while((i+x*8) < 64 && !board[i+x*8]){
-              directions.push(i + x*8);
-              x++;
-            }
-            if ((i+x*8) < 64 && board[i+x*8] && board[i+x*8].color === 'white'){
-              directions.push(i+x*8);
-            }
-            x = 1;
-            while((i-x*8) >= 0 && !board[i-x*8]){
-              directions.push(i - x*8);
-              x++;
-            }
-            if ((i-x*8) >= 0 && board[i-x*8] && board[i-x*8].color === 'white'){
-              directions.push(i-x*8);
-            }
-            x = 1;
-            while((i+x)%8 > i%8 && !board[i+x]){
-              directions.push(i + x);
-              x++;
-            }
-            if ((i+x)%8 > i%8 && board[i+x] && board[i+x].color === 'white'){
-              directions.push(i+x);
-            }
-            x = 1;
-            while((i-x)%8 < i%8 && !board[i-x]){
-              directions.push(i - x);
-              x++;
-            }
-            if ((i-x)%8 && board[i-x] && board[i-x].color === 'white'){
-              directions.push(i-x);
-            }
-          }
-
-          else if (piece.type === 'B'){
-            let x = 1;
-            while((i+x*9) < 64 && (i + x*9)%8 > i%8 && !board[i+x*9]){
-              directions.push(i + x*9);
-              x++;
-            }
-            if ((i+x*9) < 64 && (i + x*9)%8 > i%8 && board[i+x*9] && board[i+x*9].color === 'white'){
-              directions.push(i + x*9);
-            }
-            x = 1;
-            while((i-x*9) >= 0 && (i - x*9)%8 < i%8 && !board[i-x*9]){
-              directions.push(i - x*9);
-              x++;
-            }
-            if ((i-x*9) >= 0 && (i - x*9)%8 < i%8 && board[i-x*9] && board[i-x*9].color === 'white'){
-              directions.push(i - x*9);
-            }
-            x = 1;
-            while((i+x*7) < 64 && (i + x*7)%8 < i%8 && !board[i+x*7]){
-              directions.push(i + x*7);
-              x++;
-            }
-            if ((i+x*7) < 64 && (i + x*7)%8 < i%8 && board[i + x*7] && board[i + x*7].color === 'white'){
-              directions.push(i + x*7);
-            }
-            x = 1;
-            while((i-x*7) >= 0 && (i - x*7)%8 > i%8 && !board[i-x*7]){
-              directions.push(i - x*7);
-              x++;
-            }
-            if ((i-x*7) >= 0 && (i - x*7)%8 > i%8 && board[i-x*7] && board[i-x*7].color === 'white'){
-              directions.push(i - x*7);
-            }
-          }
-
-          else if (piece.type === 'N'){
-            if (i%8 != 7 && i + 16 <64 && (!board[i+17] || board[i+17].color === 'white')){
-              directions.push(i+17);
-            }
-            if (i%8 != 0 && i + 16 <64 && (!board[i+15] || board[i+15].color === 'white')){
-              directions.push(i+15);
-            }
-            if (i%8 != 7 && i - 16 >= 0 && (!board[i-15] || board[i-15].color === 'white')){
-              directions.push(i-15);
-            }
-            if (i%8 != 0 && i - 16 >= 0 && (!board[i-17] || board[i-17].color === 'white')){
-              directions.push(i-17);
-            }
-
-
-            if ((i+2)%8 > i%8 && i + 8 <64 && (!board[i+10] || board[i+10].color === 'white')){
-              directions.push(i+10);
-            }
-            if ((i-2)%8 < i%8 && i + 8 <64 && (!board[i+6] || board[i+6].color === 'white')){
-              directions.push(i+6);
-            }
-            if ((i+2)%8 > i%8 && i - 8 >= 0 && (!board[i-6]|| board[i-6].color === 'white')){
-              directions.push(i-6);
-            }
-            if ((i-2)%8 < i%8 && i - 8 >= 0 && (!board[i-10]|| board[i-10].color === 'white')){
-              directions.push(i-10);
-            }
-          }
-
-          else if (piece.type === 'Q'){
-            //Rook
-            let x = 1;
-            while((i+x*8) < 64 && !board[i+x*8]){
-              directions.push(i + x*8);
-              x++;
-            }
-            if ((i+x*8) < 64 && board[i+x*8] && board[i+x*8].color === 'white'){
-              directions.push(i+x*8);
-            }
-            x = 1;
-            while((i-x*8) >= 0 && !board[i-x*8]){
-              directions.push(i - x*8);
-              x++;
-            }
-            if ((i-x*8) >= 0 && board[i-x*8] && board[i-x*8].color === 'white'){
-              directions.push(i-x*8);
-            }
-            x = 1;
-            while((i+x)%8 > i%8 && !board[i+x]){
-              directions.push(i + x);
-              x++;
-            }
-            if ((i+x)%8 > i%8 && board[i+x] && board[i+x].color === 'white'){
-              directions.push(i+x);
-            }
-            x = 1;
-            while((i-x)%8 < i%8 && !board[i-x]){
-              directions.push(i - x);
-              x++;
-            }
-            if ((i-x)%8 && board[i-x] && board[i-x].color === 'white'){
-              directions.push(i-x);
-            }
-
-            //Bishop
-            x = 1;
-            while((i+x*9) < 64 && (i + x*9)%8 > i%8 && !board[i+x*9]){
-              directions.push(i + x*9);
-              x++;
-            }
-            if ((i+x*9) < 64 && (i + x*9)%8 > i%8 && board[i+x*9] && board[i+x*9].color === 'white'){
-              directions.push(i + x*9);
-            }
-            x = 1;
-            while((i-x*9) >= 0 && (i - x*9)%8 < i%8 && !board[i-x*9]){
-              directions.push(i - x*9);
-              x++;
-            }
-            if ((i-x*9) >= 0 && (i - x*9)%8 < i%8 && board[i-x*9] && board[i-x*9].color === 'white'){
-              directions.push(i - x*9);
-            }
-            x = 1;
-            while((i+x*7) < 64 && (i + x*7)%8 < i%8 && !board[i+x*7]){
-              directions.push(i + x*7);
-              x++;
-            }
-            if ((i+x*7) < 64 && (i + x*7)%8 < i%8 && board[i + x*7] && board[i + x*7].color === 'white'){
-              directions.push(i + x*7);
-            }
-            x = 1;
-            while((i-x*7) >= 0 && (i - x*7)%8 > i%8 && !board[i-x*7]){
-              directions.push(i - x*7);
-              x++;
-            }
-            if ((i-x*7) >= 0 && (i - x*7)%8 > i%8 && board[i-x*7] && board[i-x*7].color === 'white'){
-              directions.push(i - x*7);
-            }
-          }
-
-          else if (piece.type === 'K'){
-            if (!(i%8 == 0) && (!board[i-1] || board[i-1].color === 'white')){
-              directions.push(i-1);
-            }
-            if (!(i%8==7) && (!board[i+1] || board[i+1].color === 'white')){
-              directions.push(i+1);
-            }
-            if (i-8 >= 0 && (!board[i-8] || board[i-8].color === 'white')){
-              directions.push(i-8);
-            }
-            if (i+8 < 64 && (!board[i+8] || board[i+8].color === 'white')){
-              directions.push(i+8);
-            }
-            if (i-7 >= 0 && (i-7)%8 != 0 && (!board[i-7] || board[i-7].color === 'white')){
-              directions.push(i-7);
-            }
-            if (i-9 >= 0 && (i-9)%8 != 7 && (!board[i-9] || board[i-9].color === 'white')){
-              directions.push(i-9);
-            }
-            if (i+7 < 64 && (i+7)%8 != 0 && (!board[i+7] || board[i+7].color === 'white')){
-              directions.push(i+7);
-            }
-            if (i+9 < 64 && (i+9)%8 != 7 && (!board[i+9] || board[i+9].color === 'white')){
-              directions.push(i+9);
-            }
-          }
-
------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  */
