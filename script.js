@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const authDiv = document.getElementById('auth');
     const gameDiv = document.getElementById('game');
     const userNameSpan = document.getElementById('user-name');
-    
+    const depth = 10;
 
     // LOG IN AND SIGN UP UI
     
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let board = [];
     let currentTurn = 'white'; // white starts
     let selectedSquare = null;
-    let gameMode = null; // either 'sandbox', 'random', or 'afnan'
+    let gameMode = null; // either 'sandbox', 'afnan', or 'engine'
     
     // Mapping piece type and color to Unicode symbols
     //Need to add actual pictures for the pieces
@@ -240,7 +240,35 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       return eval;
     }
-    
+
+function getFen(board) {
+  let fen = '';
+  let count = 0;
+  for (let i = 0; i < 64; i++) {
+    if (i % 8 === 0 && i !== 0) {
+      fen += count > 0 ? count : '';
+      count = 0;
+      fen += '/';
+    }
+    if (board[i]){
+      if (count > 0) {
+        fen += count;
+      }
+      count = 0;
+      if (board[i].color === 'white'){
+        fen += board[i].type;
+      }
+      else{
+        fen += board[i].type.toLowerCase();
+      }
+    }
+    else{
+      count++;
+    }
+  }
+  return fen;
+}
+
 function generateMoves(i, piece, board) {
   const directions = [];
 
@@ -355,7 +383,7 @@ function generateMoves(i, piece, board) {
 }
 
 
-    // A simple bot move (using random move selection for random and a slightly smarter selection for Afnan).
+    // A simple bot move function
     function botMove() {
       let possibleMoves = [];
       let currEval = eval(board);
@@ -374,7 +402,7 @@ function generateMoves(i, piece, board) {
           directions.forEach(dir => {
             const target = dir;
             possibleMoves.push({ from: i, to: target });
-            if (gameMode === 'afnan'){
+            if (gameMode === 'easy'){
               let testEval = currEval + points(board[target])
               if (testEval > maxEval){
                 bestMove = {from:i, to:target}
@@ -386,10 +414,14 @@ function generateMoves(i, piece, board) {
       }
       if (possibleMoves.length > 0) {
         let move;
-        if (gameMode === 'random') {
-          // random: purely random move.
+        if (gameMode === 'hard') {
+          //hard: Play an engine move
           move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-        } else if (gameMode === 'afnan') {
+          let fen = getFen(board);
+          console.log(fen);
+          // let bestMove = getBestMove(fen, depth);
+          // move = bestMove;          
+        } else if (gameMode === 'easy') {
           if (bestMove == null){
             move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
           }
@@ -426,12 +458,12 @@ function generateMoves(i, piece, board) {
       gameMode = 'sandbox';
       startChessGame();
     });
-    document.getElementById('random-btn').addEventListener('click', () => {
-      gameMode = 'random';
+    document.getElementById('easy-btn').addEventListener('click', () => {
+      gameMode = 'easy';
       startChessGame();
     });
-    document.getElementById('afnan-btn').addEventListener('click', () => {
-      gameMode = 'afnan';
+    document.getElementById('hard-btn').addEventListener('click', () => {
+      gameMode = 'hard';
       startChessGame();
     });
     
