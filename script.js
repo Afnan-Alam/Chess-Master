@@ -178,6 +178,7 @@ function handleSquareClick(e) {
   const piece = board[index];
 
   moveKingInCheckPopup.style.display = 'none';
+  
   if (selectedSquare === null) {
     if (piece && piece.color === currentTurn) {
       selectedSquare = index;
@@ -199,28 +200,15 @@ function handleSquareClick(e) {
       return;
     }
 
-    // Check if move is legal by simulating it
-    const tempFrom = board[selectedSquare];
-    const tempTo = board[index];
-    board[index] = tempFrom;
-    board[selectedSquare] = null;
+    move (selectedSquare, index);
 
-    // Find new king position (especially if king moved)
-    let currKingIndex = movingPiece.type === 'K' ? index : (movingPiece.color === 'white' ? whiteKingIndex : blackKingIndex);
-    let kingSafe = !isSquareAttacked(currKingIndex, botColor());
-    console.log(kingSafe);
-
-    // Undo move
-    board[selectedSquare] = tempFrom;
-    board[index] = tempTo;
-
-    if (!kingSafe) {
+    if (!kingSafe()) {
       console.log("Illegal move: You can't leave your king in check.");
       moveToCheck();
+      move(index, selectedSquare);
       return;
     }
 
-    // Now apply move for real
     if (movingPiece.type === 'K') {
       if (movingPiece.color === 'white') {
         whiteKingIndex = index;
@@ -228,10 +216,6 @@ function handleSquareClick(e) {
         blackKingIndex = index;
       }
     }
-
-    board[index] = movingPiece;
-    board[selectedSquare] = null;
-    selectedSquare = null;
 
     // Check if king is captured
     if (piece && piece.type === 'K') {
@@ -252,15 +236,12 @@ function isSquareAttacked(index, attackerColor) {
   for (let i = 0; i < 64; i++) {
     const attacker = board[i];
     if (attacker && attacker.color === attackerColor) {
-      const moves = generateMoves(i, attacker, board);
+      const moves = generateMoves(i, attacker);
       if (moves.includes(index)) return true;
     }
   }
   return false;
 }
-
-    
-
     
     function botColor() {
       // In bot games we assume the human is white.
@@ -321,17 +302,30 @@ function getFen(board) {
   return fen;
 }
 
-function generateMoves(i, piece, board) {
+function move(start, end) {
+  board[end] = board[start];
+  board[start] = null;
+}
+
+function kingSafe() {
+  const kingIndex = currentTurn === 'white' ? whiteKingIndex : blackKingIndex;
+  return !isSquareAttacked(kingIndex, currentTurn === 'white' ? 'black' : 'white');
+}
+
+function generateMoves(i, piece) {
   const directions = [];
 
   const isOpponent = (target) => board[target] && board[target].color !== piece.color;
 
   const sameRow = (a, b) => Math.floor(a / 8) === Math.floor(b / 8);
-
+  // if (to >= 0 && to < 64 && (!board[to] || isOpponent(to)))
   const tryAdd = (to) => {
-    if (to >= 0 && to < 64 && (!board[to] || isOpponent(to))) {
-      directions.push(to);
-    }
+  const originalFrom = board[i];
+  const originalTo = board[to];
+  move(i, to);
+  if (kingSafe()) directions.push(to);
+  board[i] = originalFrom;
+  board[to] = originalTo;
   };
 
   if (piece.type === 'P') {
@@ -339,11 +333,11 @@ function generateMoves(i, piece, board) {
     const startRow = piece.color === 'white' ? 6 : 1;
 
     if (!board[i + dir]) {
-      directions.push(i + dir);
-      if (Math.floor(i / 8) === startRow && !board[i + dir * 2]) {
-        directions.push(i + dir * 2);
+        tryAdd(i + dir);
+        if (Math.floor(i / 8) === startRow && !board[i + dir * 2]) {
+            tryAdd(i + dir * 2);
+          }
       }
-    }
 
     // Captures
     const captureOffsets = piece.color !== 'white' ? [7, 9] : [-7, -9];
@@ -356,7 +350,7 @@ function generateMoves(i, piece, board) {
         isOpponent(to) &&
         Math.abs((to % 8) - (i % 8)) === 1
       ) {
-        directions.push(to);
+        tryAdd(to);
       }
     }
   }
@@ -372,9 +366,9 @@ function generateMoves(i, piece, board) {
         if ((v === 1 || v === -1) && !sameRow(i, to)) break;
 
         if (!board[to]) {
-          directions.push(to);
+          tryAdd(to);
         } else if (isOpponent(to)) {
-          directions.push(to);
+          tryAdd(to);
           break;
         } else {
           break;
@@ -395,9 +389,9 @@ function generateMoves(i, piece, board) {
         if (Math.abs((to % 8) - (i % 8)) !== x) break;
 
         if (!board[to]) {
-          directions.push(to);
+          tryAdd(to);
         } else if (isOpponent(to)) {
-          directions.push(to);
+          tryAdd(to);
           break;
         } else {
           break;
@@ -455,113 +449,109 @@ async function getBestMove(fen){
   return {from: from, to: to};
 }
 
-    // A simple bot move function
-    function botMove() {
-      let possibleMoves = [];
-      let currEval = eval(board);
-      let bestMove = null;
-      let maxEval = currEval;
-      
-      for (let i = 0; i < 64; i++) {
-        if (!board[i]){
-          continue;
-        }
-        const piece = board[i];
-        if (piece && piece.color === botColor()) {
-          // For demonstration, generate potential moves by trying each adjacent square.
-          let directions = generateMoves(i, piece, board);
+// A simple bot move function
+function botMove() {
+  let possibleMoves = [];
+  let currEval = eval(board);
+  let bestMove = null;
+  let maxEval = currEval;
+  
+  for (let i = 0; i < 64; i++) {
+    if (!board[i]){
+      continue;
+    }
+    const piece = board[i];
+    if (piece && piece.color === botColor()) {
+      // For demonstration, generate potential moves by trying each adjacent square.
+      let directions = generateMoves(i, piece);
 
-          directions.forEach(dir => {
-            const target = dir;
-            possibleMoves.push({ from: i, to: target });
-            //Here
-            if (board[possibleMoves.to] && board[possibleMoves.to].type === 'K'){
-              gameOver();
-              currentTurn = 'white';
-              renderBoard();
-            }
-            if (gameMode === 'easy'){
-              let testEval = currEval + points(board[target])
-              if (testEval > maxEval){
-                bestMove = {from:i, to:target}
-                maxEval = testEval;
-              }
-            }
-          });
+      directions.forEach(dir => {
+        const target = dir;
+        possibleMoves.push({ from: i, to: target });
+        //Here
+        if (board[possibleMoves.to] && board[possibleMoves.to].type === 'K'){
+          gameOver();
+          currentTurn = 'white';
+          renderBoard();
         }
+        if (gameMode === 'easy'){
+          let testEval = currEval + points(board[target])
+          if (testEval > maxEval){
+            bestMove = {from:i, to:target}
+            maxEval = testEval;
+          }
+        }
+      });
+    }
+  }
+  if (possibleMoves.length > 0) {
+    if (gameMode === 'hard') {
+      //hard: Play an engine move
+      move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+      let fen = getFen(board);
+      getBestMove(fen).then(move =>{
+    if (!move) return;
+    const movingPiece = board[move.from];
+    const capturedPiece = board[move.to];
+    board[move.to] = movingPiece;
+    board[move.from] = null;
+
+    if (movingPiece.type === 'K') {
+      if (movingPiece.color === 'white') whiteKingIndex = move.to;
+      else blackKingIndex = move.to;
+    }
+
+    if (capturedPiece && capturedPiece.type === 'K') {
+      gameOver();
+    }
+
+    currentTurn = 'white';
+    renderBoard();
+  });     
+    } else if (gameMode === 'easy') {
+      if (bestMove == null){
+        move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
       }
-      if (possibleMoves.length > 0) {
-        let move;
-        if (gameMode === 'hard') {
-          //hard: Play an engine move
-          move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-          let fen = getFen(board);
-          getBestMove(fen).then(bestMove =>{
-            move = bestMove;
-          if (board[move.to] && board[move.to].type === 'K'){
-            gameOver();
-            board[move.to] = board[move.from];
-            board[move.from] = null;
-            currentTurn = 'white';
-            renderBoard();
-          }
-          else{
-            board[move.to] = board[move.from];
-            board[move.from] = null;
-            currentTurn = 'white';
-            renderBoard();
-          }  
-          });     
-        } else if (gameMode === 'easy') {
-          if (bestMove == null){
-            move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-          }
-          else{
-            move = bestMove;
-          }
-
-          // // Afnan: if a capture is available, take it; otherwise, choose a random move.
-          // const captureMoves = possibleMoves.filter(m => board[m.to] && board[m.to].color !== botColor());
-          // move = (captureMoves.length > 0) ?
-          //   captureMoves[Math.floor(Math.random() * captureMoves.length)] :
-          //   possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-          if (board[move.to] && board[move.to].type === 'K'){
-            gameOver();
-            board[move.to] = board[move.from];
-            board[move.from] = null;
-            currentTurn = 'white';
-            renderBoard();
-          }
-          else{
-            board[move.to] = board[move.from];
-            board[move.from] = null;
-            currentTurn = 'white';
-            renderBoard();
-          }
-        }
+      else{
+        move = bestMove;
+      }
+      if (board[move.to] && board[move.to].type === 'K'){
+        gameOver();
+        board[move.to] = board[move.from];
+        board[move.from] = null;
+        currentTurn = 'white';
+        renderBoard();
+      }
+      else{
+        board[move.to] = board[move.from];
+        board[move.from] = null;
+        currentTurn = 'white';
+        renderBoard();
       }
     }
-    
+  }
+}
 
 
-    // ===== Game Mode Selection =====
-    document.getElementById('sandbox-btn').addEventListener('click', () => {
-      gameMode = 'sandbox';
-      startChessGame();
-    });
-    document.getElementById('easy-btn').addEventListener('click', () => {
-      gameMode = 'easy';
-      startChessGame();
-    });
-    document.getElementById('hard-btn').addEventListener('click', () => {
-      gameMode = 'hard';
-      startChessGame();
-    });
-    
-    function startChessGame() {
-      initBoard();
-      currentTurn = 'white';
-      selectedSquare = null;
-      renderBoard();
-    }
-  });
+
+// ===== Game Mode Selection =====
+document.getElementById('sandbox-btn').addEventListener('click', () => {
+  gameMode = 'sandbox';
+  startChessGame();
+});
+document.getElementById('easy-btn').addEventListener('click', () => {
+  gameMode = 'easy';
+  startChessGame();
+});
+document.getElementById('hard-btn').addEventListener('click', () => {
+  gameMode = 'hard';
+  startChessGame();
+});
+
+function startChessGame() {
+  initBoard();
+  currentTurn = 'white';
+  selectedSquare = null;
+  renderBoard();
+}
+});
