@@ -238,10 +238,12 @@ function handleSquareClick(e) {
       board[index] = movingTo;
       return;
     }
+
+    currentTurn = currentTurn === 'white' ? 'black' : 'white';
+
     if (checkMate()){
       gameOver();
     }
-    currentTurn = currentTurn === 'white' ? 'black' : 'white';
 
     renderBoard();
 
@@ -253,7 +255,11 @@ function handleSquareClick(e) {
 }
 
 function legal(from, to) {
-  return generateMoves(from, board[from]).includes(to);
+  test = generateMoves(from, board[from])
+  if(!test.includes(to)){
+    console.log(from, board[from], test);
+  }
+  return test.includes(to);
 }
 
 function isSquareAttacked(index, attackerColor) {
@@ -274,8 +280,6 @@ function checkMate(){
     for (let i = 0; i < 64; i++) {
       if (board[i] && board[i].color === currentTurn){
         moves = generateMoves(i, board[i]);
-        console.log(getFen());
-        console.log(i, board[i], moves)
         if (moves.length > 0){
           return false; // Not CheckMate
         }
@@ -453,11 +457,7 @@ function generateMoves(i, piece, ignoreKingCheck = false) {
     const offsets = [15, 17, 6, 10, -15, -17, -6, -10];
     for (let offset of offsets) {
       const to = i + offset;
-      if (
-        to >= 0 &&
-        to < 64 &&
-        Math.abs((to % 8) - (i % 8)) <= 2
-      ) {
+      if (to >= 0 && to < 64 && Math.abs((to % 8) - (i % 8)) <= 2 && (!board[to] || isOpponent(to))) {
         tryAdd(to);
       }
     }
@@ -503,6 +503,34 @@ function botMove() {
   let currEval = eval(board);
   let bestMove = null;
   let maxEval = currEval;
+  if (gameMode === 'hard') {
+      //hard: Play an engine move
+      let fen = getFen();
+      getBestMove(fen).then(move =>{
+    if (!move) return;
+    const movingPiece = board[move.from];
+    const capturedPiece = board[move.to];
+    board[move.to] = movingPiece;
+    board[move.from] = null;
+
+    if (movingPiece.type === 'K') {
+      if (movingPiece.color === 'white') whiteKingIndex = move.to;
+      else blackKingIndex = move.to;
+    }
+
+    if (capturedPiece && capturedPiece.type === 'K') {
+      gameOver();
+    }
+
+    currentTurn = 'white';
+    renderBoard();
+    if (checkMate()){
+          gameOver();
+    }
+  });
+  return;    
+  }
+  else if (gameMode === 'easy') {
   
   for (let i = 0; i < 64; i++) {
     if (!board[i]){
@@ -532,56 +560,35 @@ function botMove() {
       });
     }
   }
+  
   if (possibleMoves.length > 0) {
-    if (gameMode === 'hard') {
-      //hard: Play an engine move
-      let fen = getFen();
-      getBestMove(fen).then(move =>{
-    if (!move) return;
-    const movingPiece = board[move.from];
-    const capturedPiece = board[move.to];
-    board[move.to] = movingPiece;
-    board[move.from] = null;
-
-    if (movingPiece.type === 'K') {
-      if (movingPiece.color === 'white') whiteKingIndex = move.to;
-      else blackKingIndex = move.to;
+    
+    if (bestMove == null){
+      moveToDo = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
     }
-
-    if (capturedPiece && capturedPiece.type === 'K') {
+    else{
+      moveToDo = bestMove;
+    }
+    if (board[moveToDo.to] && board[moveToDo.to].type === 'K'){
       gameOver();
+      board[moveToDo.to] = board[moveToDo.from];
+      board[moveToDo.from] = null;
+      currentTurn = 'white';
+      renderBoard();
     }
-
-    currentTurn = 'white';
-    renderBoard();
-    if (checkMate()){
-          gameOver();
-    }
-  });     
-    } else if (gameMode === 'easy') {
-      if (bestMove == null){
-        move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-      }
-      else{
-        move = bestMove;
-      }
-      if (board[move.to] && board[move.to].type === 'K'){
+    else{
+      board[moveToDo.to] = board[moveToDo.from];
+      board[moveToDo.from] = null;
+      currentTurn = 'white';
+      if (checkMate()){
         gameOver();
-        board[move.to] = board[move.from];
-        board[move.from] = null;
-        currentTurn = 'white';
-        renderBoard();
       }
-      else{
-        board[move.to] = board[move.from];
-        board[move.from] = null;
-        currentTurn = 'white';
-        if (checkMate()){
-          gameOver();
-        }
-        renderBoard();        
-      }
+      renderBoard();        
     }
+  }
+  else {
+    gameOver();
+  }
   }
 }
 
