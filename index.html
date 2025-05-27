@@ -67,7 +67,7 @@
     <div id="game-over-popup" style="display:none;" class="popup-overlay">
       <div class="popup-box">
         <span id="close-popup" class="close-btn">&times;</span>
-        <h1 class="site-title">Game Over</h1>
+        <h1 class="site-title">CheckMate</h1>
         <p class="feel-free">Feel free to play again or analyze the board</p>
       </div>
     </div>
@@ -78,7 +78,15 @@
         <p class="feel-free">Cannot move your King into Check.</p>
         <p class="feel-free">Try to move to another square.</p>
       </div>
-    </div>    
+    </div>
+    <div id="illegalMove-popup" style="display:none;" class="popup-overlay">
+      <div class="popup-box">
+        <span id="illegalMove-popup" class="close-btn">&times;</span>
+        <h1 class="site-title">Illegal Move</h1>
+        <p class="feel-free">Piece cannot move here.</p>
+        <p class="feel-free">Try to move to another square.</p>
+      </div>
+    </div>     
   </div>
 
   <script>

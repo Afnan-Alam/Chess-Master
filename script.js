@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const depth = 10;
     const popup = document.getElementById('game-over-popup');
     const moveKingInCheckPopup = document.getElementById('moveKingInCheck-popup');
+    const illegalMovePopup = document.getElementById('illegalMove-popup');
 
     let whiteKingIndex = 60;
     let blackKingIndex = 4;
@@ -87,6 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
       moveKingInCheckPopup.style.display = 'flex';
       document.getElementById('moveIntoCheck-popup').addEventListener('click', () => {
         moveKingInCheckPopup.style.display = 'none';
+      });
+    }
+    function illegalMoveCSS() {
+      illegalMovePopup.style.display = 'flex';
+      document.getElementById('illegalMove-popup').addEventListener('click', () => {
+        illegalMovePopup.style.display = 'none';
       });
     }
     
@@ -178,7 +185,7 @@ function handleSquareClick(e) {
   const piece = board[index];
 
   moveKingInCheckPopup.style.display = 'none';
-  
+
   if (selectedSquare === null) {
     if (piece && piece.color === currentTurn) {
       selectedSquare = index;
@@ -192,6 +199,7 @@ function handleSquareClick(e) {
     }
 
     const movingPiece = board[selectedSquare];
+    const movingTo = board[index]
 
     // Prevent moving to your own piece
     if (piece && piece.color === currentTurn) {
@@ -199,15 +207,16 @@ function handleSquareClick(e) {
       renderBoard();
       return;
     }
-
-    move (selectedSquare, index);
-
-    if (!kingSafe()) {
-      console.log("Illegal move: You can't leave your king in check.");
-      moveToCheck();
-      move(index, selectedSquare);
+    if (!legal(selectedSquare, index)){
+      //Run legal code
+      console.log("Illegal move: Piece can't move here.");
+      illegalMoveCSS();
+      board[selectedSquare] = movingPiece;
+      board[index] = movingTo;
       return;
     }
+    
+    move (selectedSquare, index);
 
     if (movingPiece.type === 'K') {
       if (movingPiece.color === 'white') {
@@ -222,7 +231,18 @@ function handleSquareClick(e) {
       gameOver();
     }
 
+    if (!kingSafe()) {
+      console.log("Illegal move: You can't leave your king in check.");
+      moveToCheck(); //CSS function
+      board[selectedSquare] = movingPiece;
+      board[index] = movingTo;
+      return;
+    }
+    if (checkMate()){
+      gameOver();
+    }
     currentTurn = currentTurn === 'white' ? 'black' : 'white';
+
     renderBoard();
 
     // Bot move
@@ -232,48 +252,71 @@ function handleSquareClick(e) {
   }
 }
 
+function legal(from, to) {
+  return generateMoves(from, board[from]).includes(to);
+}
+
 function isSquareAttacked(index, attackerColor) {
   for (let i = 0; i < 64; i++) {
     const attacker = board[i];
     if (attacker && attacker.color === attackerColor) {
-      const moves = generateMoves(i, attacker);
+      const moves = generateMoves(i, attacker, true);
       if (moves.includes(index)) return true;
     }
   }
   return false;
 }
-    
-    function botColor() {
-      // In bot games we assume the human is white.
-      return 'black';
-    }
+  
+function checkMate(){
+  const kinIndex = currentTurn === 'white' ? whiteKingIndex : blackKingIndex;
 
-    function points(piece){
-      if (piece){
-        return pieceVal[piece.type]
-      }
-      else{
-        return 0;
-      }
-      return 0;
-    }
-
-    function eval(){
-      let eval = 0;
-      for (let i = 0; i<64;i++){
-        if (board[i]){
-          if(board[i].color === botColor()){
-            eval += points(board[i]);
-          }
-          else{
-            eval -= points(board[i]);
-          }
+  if (!kingSafe()) {
+    for (let i = 0; i < 64; i++) {
+      if (board[i] && board[i].color === currentTurn){
+        moves = generateMoves(i, board[i]);
+        console.log(getFen());
+        console.log(i, board[i], moves)
+        if (moves.length > 0){
+          return false; // Not CheckMate
         }
       }
-      return eval;
     }
+    return true; // CheckMate
+  }
+  return false; //Not Checkmate, could be stalemate
+}
 
-function getFen(board) {
+function botColor() {
+  // In bot games we assume the human is white.
+  return 'black';
+}
+
+function points(piece){
+  if (piece){
+    return pieceVal[piece.type]
+  }
+  else{
+    return 0;
+  }
+  return 0;
+}
+
+function eval(){
+  let eval = 0;
+  for (let i = 0; i<64;i++){
+    if (board[i]){
+      if(board[i].color === botColor()){
+        eval += points(board[i]);
+      }
+      else{
+        eval -= points(board[i]);
+      }
+    }
+  }
+  return eval;
+}
+
+function getFen() {
   let fen = '';
   let count = 0;
   for (let i = 0; i < 64; i++) {
@@ -307,12 +350,12 @@ function move(start, end) {
   board[start] = null;
 }
 
-function kingSafe() {
-  const kingIndex = currentTurn === 'white' ? whiteKingIndex : blackKingIndex;
+function kingSafe(customKingIndex = null) {
+  const kingIndex = customKingIndex !== null ? customKingIndex : (currentTurn === 'white' ? whiteKingIndex : blackKingIndex);
   return !isSquareAttacked(kingIndex, currentTurn === 'white' ? 'black' : 'white');
 }
 
-function generateMoves(i, piece) {
+function generateMoves(i, piece, ignoreKingCheck = false) {
   const directions = [];
 
   const isOpponent = (target) => board[target] && board[target].color !== piece.color;
@@ -323,7 +366,12 @@ function generateMoves(i, piece) {
   const originalFrom = board[i];
   const originalTo = board[to];
   move(i, to);
-  if (kingSafe()) directions.push(to);
+
+  const movingKing = originalFrom.type === 'K';
+  const tempKingIndex = movingKing ? to : null;
+
+  const safe = ignoreKingCheck || kingSafe(tempKingIndex);
+  if (safe) directions.push(to);
   board[i] = originalFrom;
   board[to] = originalTo;
   };
@@ -419,7 +467,7 @@ function generateMoves(i, piece) {
     const offsets = [-1, 1, -8, 8, -7, -9, 7, 9];
     for (let offset of offsets) {
       const to = i + offset;
-      if (to >= 0 && to < 64 && Math.abs((to % 8) - (i % 8)) <= 1) {
+      if (to >= 0 && to < 64 && Math.abs((to % 8) - (i % 8)) <= 1 && (!board[to] || isOpponent(to))) {
         tryAdd(to);
       }
     }
@@ -487,8 +535,7 @@ function botMove() {
   if (possibleMoves.length > 0) {
     if (gameMode === 'hard') {
       //hard: Play an engine move
-      move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-      let fen = getFen(board);
+      let fen = getFen();
       getBestMove(fen).then(move =>{
     if (!move) return;
     const movingPiece = board[move.from];
@@ -507,6 +554,9 @@ function botMove() {
 
     currentTurn = 'white';
     renderBoard();
+    if (checkMate()){
+          gameOver();
+    }
   });     
     } else if (gameMode === 'easy') {
       if (bestMove == null){
@@ -526,7 +576,10 @@ function botMove() {
         board[move.to] = board[move.from];
         board[move.from] = null;
         currentTurn = 'white';
-        renderBoard();
+        if (checkMate()){
+          gameOver();
+        }
+        renderBoard();        
       }
     }
   }
