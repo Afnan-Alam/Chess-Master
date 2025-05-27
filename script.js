@@ -10,9 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const moveKingInCheckPopup = document.getElementById('moveKingInCheck-popup');
     const illegalMovePopup = document.getElementById('illegalMove-popup');
 
-    let whiteKingIndex = 60;
-    let blackKingIndex = 4;
-
     // LOG IN AND SIGN UP UI
     
     // User Accounts are stored in LocalStorage.
@@ -102,9 +99,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTurn = 'white'; // white starts
     let selectedSquare = null;
     let gameMode = null; // either 'sandbox', 'afnan', or 'engine'
+
+    let whiteKingIndex = 60;
+    let blackKingIndex = 4;
+
+    let selectedMoves = [];
     
-    // Mapping piece type and color to Unicode symbols
-    //Need to add actual pictures for the pieces
     const pieceSymbols = {
       'K_white': 'piecePics/wK.png', 'Q_white': 'piecePics/wQ.png', 'R_white': 'piecePics/wR.png', 'B_white': 'piecePics/wB.png', 'N_white': 'piecePics/wN.png', 'P_white': 'piecePics/wP.png',
       'K_black': 'piecePics/bK.png', 'Q_black': 'piecePics/bQ.png', 'R_black': 'piecePics/bR.png', 'B_black': 'piecePics/bB.png', 'N_black': 'piecePics/bN.png', 'P_black': 'piecePics/bP.png'
@@ -172,6 +172,11 @@ document.addEventListener('DOMContentLoaded', () => {
           img.classList.add('chess-piece');
           square.appendChild(img);
         }
+        if (selectedMoves.includes(i)) {
+          const dot = document.createElement('div');
+          dot.classList.add('highlight-move');
+          square.appendChild(dot);
+        }
         square.addEventListener('click', handleSquareClick);
         boardDiv.appendChild(square);
       }
@@ -189,25 +194,31 @@ function handleSquareClick(e) {
   if (selectedSquare === null) {
     if (piece && piece.color === currentTurn) {
       selectedSquare = index;
+      selectedMoves = generateMoves(selectedSquare, piece);
       renderBoard();
     }
   } else {
     if (selectedSquare === index) {
       selectedSquare = null;
+      selectedMoves = [];
       renderBoard();
       return;
     }
 
     const movingPiece = board[selectedSquare];
-    const movingTo = board[index]
+    const movingTo = board[index];
 
     // Prevent moving to your own piece
     if (piece && piece.color === currentTurn) {
       selectedSquare = index;
+      selectedMoves = generateMoves(selectedSquare, movingTo);
       renderBoard();
       return;
     }
-    if (!legal(selectedSquare, index)){
+
+    // selectedMoves = generateMoves(selectedSquare, movingPiece);
+    
+    if ((selectedMoves.length > 0 && !selectedMoves.includes(index)) || !legal(selectedSquare, index)){
       //Run legal code
       console.log("Illegal move: Piece can't move here.");
       illegalMoveCSS();
@@ -245,6 +256,7 @@ function handleSquareClick(e) {
       gameOver();
     }
 
+    selectedMoves = [];
     renderBoard();
 
     // Bot move
@@ -255,10 +267,7 @@ function handleSquareClick(e) {
 }
 
 function legal(from, to) {
-  test = generateMoves(from, board[from])
-  if(!test.includes(to)){
-    console.log(from, board[from], test);
-  }
+  let test = generateMoves(from, board[from]);
   return test.includes(to);
 }
 
@@ -279,7 +288,7 @@ function checkMate(){
   if (!kingSafe()) {
     for (let i = 0; i < 64; i++) {
       if (board[i] && board[i].color === currentTurn){
-        moves = generateMoves(i, board[i]);
+        let moves = generateMoves(i, board[i]);
         if (moves.length > 0){
           return false; // Not CheckMate
         }
@@ -384,7 +393,7 @@ function generateMoves(i, piece, ignoreKingCheck = false) {
     const dir = piece.color === 'white' ? -8 : 8;
     const startRow = piece.color === 'white' ? 6 : 1;
 
-    if (!board[i + dir]) {
+    if ((i+dir)>=0 && (i+dir)<64 && !board[i + dir]) {
         tryAdd(i + dir);
         if (Math.floor(i / 8) === startRow && !board[i + dir * 2]) {
             tryAdd(i + dir * 2);
@@ -545,7 +554,7 @@ function botMove() {
         const target = dir;
         possibleMoves.push({ from: i, to: target });
         //Here
-        if (board[possibleMoves.to] && board[possibleMoves.to].type === 'K'){
+        if (board[target] && board[target].type === 'K'){
           gameOver();
           currentTurn = 'white';
           renderBoard();
