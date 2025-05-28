@@ -108,6 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let whiteCastleQueenside = true;
     let blackCastleKingside = true;
     let blackCastleQueenside = true;
+
+    let enPassantSquare = null;
     
     const pieceSymbols = {
       'K_white': 'piecePics/wK.png', 'Q_white': 'piecePics/wQ.png', 'R_white': 'piecePics/wR.png', 'B_white': 'piecePics/wB.png', 'N_white': 'piecePics/wN.png', 'P_white': 'piecePics/wP.png',
@@ -233,6 +235,7 @@ function handleSquareClick(e) {
     
     move (selectedSquare, index);
 
+
     if (movingPiece.type === 'K') {
       if (movingPiece.color === 'white') {
         whiteKingIndex = index;
@@ -240,6 +243,27 @@ function handleSquareClick(e) {
         blackKingIndex = index;
       }
     }
+    else if (movingPiece.type === 'P'){
+      
+      if (index == enPassantSquare){
+        let pawnCapIndex = board[index].color === 'white' ? index + 8 : index - 8;
+        console.log("Board Index: ", board[index]);
+        console.log("pawnCapIndex: ", pawnCapIndex);
+        board[pawnCapIndex] = null;
+      }
+
+      if (Math.abs(index - selectedSquare) === 16){
+        enPassantSquare = (index + selectedSquare)/2;
+      } 
+      else {
+        enPassantSquare = null;
+      }
+    } 
+    else {
+      enPassantSquare = null;
+    }
+    console.log ("After: ", enPassantSquare);
+
 
     // Check if king is captured
     if (piece && piece.type === 'K') {
@@ -480,6 +504,11 @@ function generateMoves(i, piece, ignoreKingCheck = false) {
       ) {
         tryAdd(to);
       }
+    }
+
+    //en passant
+    if (enPassantSquare !== null && Math.abs( (enPassantSquare%8) - (i%8) ) === 1 && (enPassantSquare === i + dir + 1 || enPassantSquare === i + dir - 1)){
+      tryAdd(enPassantSquare);
     }
   }
 
