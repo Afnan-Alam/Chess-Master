@@ -104,6 +104,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let blackKingIndex = 4;
 
     let selectedMoves = [];
+    let whiteCastleKingside = true;
+    let whiteCastleQueenside = true;
+    let blackCastleKingside = true;
+    let blackCastleQueenside = true;
     
     const pieceSymbols = {
       'K_white': 'piecePics/wK.png', 'Q_white': 'piecePics/wQ.png', 'R_white': 'piecePics/wR.png', 'B_white': 'piecePics/wB.png', 'N_white': 'piecePics/wN.png', 'P_white': 'piecePics/wP.png',
@@ -256,6 +260,61 @@ function handleSquareClick(e) {
       gameOver();
     }
 
+
+    if (whiteCastleQueenside || whiteCastleKingside || blackCastleQueenside || blackCastleKingside){
+      if (movingPiece.type === 'R') {
+        if (movingPiece.color === 'white') {
+          if (selectedSquare === 56) whiteCastleQueenside = false; // a1 rook
+          if (selectedSquare === 63) whiteCastleKingside = false; // h1 rook
+          console.log("d");
+        } else {
+          if (selectedSquare === 0) blackCastleQueenside = false; // a8 rook
+          if (selectedSquare === 7) blackCastleKingside = false; // h8 rook
+        }
+      }
+      if (movingTo && movingTo.type === 'R') {
+        if (movingTo.color === 'white') {
+          if (index === 56) whiteCastleQueenside = false; // a1 rook
+          if (index === 63) whiteCastleKingside = false; // h1 rook
+          console.log("e");
+        } else {
+          if (index === 0) blackCastleQueenside = false; // a8 rook
+          if (index === 7) blackCastleKingside = false; // h8 rook
+        }
+      }
+    }
+    
+    if (movingPiece.type === 'K') {
+      if (movingPiece.color === 'white') {
+        whiteCastleKingside = false;
+        whiteCastleQueenside = false;
+        console.log("f");
+      } else {
+        blackCastleKingside = false;
+        blackCastleQueenside = false;
+      }
+      if (selectedSquare === 60) {
+        if (index === 62) {
+          board[61] = board[63]; // Move rook to f1
+          board[63] = null; // Remove rook from h1
+        }
+        else if (index === 58) {
+          board[59] = board[56]; // Move rook to d1
+          board[56] = null; // Remove rook from a1
+        }
+      }
+      else if (selectedSquare === 4) {
+        if (index === 6) {
+          board[5] = board[7]; // Move rook to f8
+          board[7] = null; // Remove rook from h8
+        }
+        else if (index === 2) {
+          board[3] = board[0]; // Move rook to d8
+          board[0] = null; // Remove rook from a8
+        }
+      }
+    }
+    
     selectedMoves = [];
     renderBoard();
 
@@ -354,7 +413,15 @@ function getFen() {
       count++;
     }
   }
-  fen += " b - - 0 1";
+  // fen += " b - - 0 1";
+  fen += " b ";
+  if (whiteCastleKingside) fen += "K";
+  if (whiteCastleQueenside) fen += "Q";
+  if (blackCastleKingside) fen += "k";
+  if (blackCastleQueenside) fen += "q";
+  if (!whiteCastleKingside && !whiteCastleQueenside && !blackCastleKingside && !blackCastleQueenside) fen += "-"
+  fen += " - 0 1";
+  console.log(fen);
   return fen;
 }
 
@@ -480,6 +547,25 @@ function generateMoves(i, piece, ignoreKingCheck = false) {
         tryAdd(to);
       }
     }
+    //Castling Moves
+    if (!ignoreKingCheck && piece.color === 'white' && i === 60) {
+      console.log("Hey");
+      console.log(whiteCastleKingside, !board[61], !board[62], !isSquareAttacked(60, 'black'), !isSquareAttacked(61, 'black'), !isSquareAttacked(62, 'black'));
+      if (whiteCastleKingside && !board[61] && !board[62] && !isSquareAttacked(60, 'black') && !isSquareAttacked(61, 'black') && !isSquareAttacked(62, 'black')){
+        directions.push(62); // Kingside castle
+      }
+      if (whiteCastleQueenside && !board[59] && !board[58] && !isSquareAttacked(60, 'black') && !isSquareAttacked(59, 'black') && !isSquareAttacked(58, 'black')){
+        directions.push(58); // Queenside castle
+      }
+    }
+    else if (!ignoreKingCheck && piece.color === 'black' && i === 4) {
+      if (blackCastleKingside && !board[5] && !board[6] && !isSquareAttacked(4, 'white') && !isSquareAttacked(5, 'white') && !isSquareAttacked(6, 'white')){
+        directions.push(6); // Kingside castle
+      }
+      if (blackCastleQueenside && !board[3] && !board[2] && !isSquareAttacked(4, 'white') && !isSquareAttacked(3, 'white') && !isSquareAttacked(2, 'white')){
+        directions.push(2); // Queenside castle
+      }
+    }
   }
 
   return directions;
@@ -513,9 +599,10 @@ function botMove() {
   let bestMove = null;
   let maxEval = currEval;
   if (gameMode === 'hard') {
-      //hard: Play an engine move
-      let fen = getFen();
-      getBestMove(fen).then(move =>{
+    //hard: Play an engine move
+    let fen = getFen();
+    getBestMove(fen).then(move =>{
+    console.log(move);
     if (!move) return;
     const movingPiece = board[move.from];
     const capturedPiece = board[move.to];
@@ -529,6 +616,63 @@ function botMove() {
 
     if (capturedPiece && capturedPiece.type === 'K') {
       gameOver();
+    }
+    let movingTo = capturedPiece;
+    let selectedSquare = move.from;
+    let index = move.to;
+
+    if (whiteCastleQueenside || whiteCastleKingside || blackCastleQueenside || blackCastleKingside){
+      if (movingPiece.type === 'R') {
+        if (movingPiece.color === 'white') {
+          if (selectedSquare === 56) whiteCastleQueenside = false; // a1 rook
+          if (selectedSquare === 63) whiteCastleKingside = false; // h1 rook
+          console.log("a");
+        } else {
+          if (selectedSquare === 0) blackCastleQueenside = false; // a8 rook
+          if (selectedSquare === 7) blackCastleKingside = false; // h8 rook
+        }
+      }
+      if (movingTo && movingTo.type === 'R') {
+        if (movingTo.color === 'white') {
+          if (index === 56) whiteCastleQueenside = false; // a1 rook
+          if (index === 63) whiteCastleKingside = false; // h1 rook
+          console.log("b");
+        } else {
+          if (index === 0) blackCastleQueenside = false; // a8 rook
+          if (index === 7) blackCastleKingside = false; // h8 rook
+        }
+      }
+    }
+    
+    if (movingPiece.type === 'K') {
+      if (movingPiece.color === 'white') {
+        whiteCastleKingside = false;
+        whiteCastleQueenside = false;
+        console.log("c");
+      } else {
+        blackCastleKingside = false;
+        blackCastleQueenside = false;
+      }
+      if (selectedSquare === 60) {
+        if (index === 62) {
+          board[61] = board[63]; // Move rook to f1
+          board[63] = null; // Remove rook from h1
+        }
+        else if (index === 58) {
+          board[59] = board[56]; // Move rook to d1
+          board[56] = null; // Remove rook from a1
+        }
+      }
+      else if (selectedSquare === 4) {
+        if (index === 6) {
+          board[5] = board[7]; // Move rook to f8
+          board[7] = null; // Remove rook from h8
+        }
+        else if (index === 2) {
+          board[3] = board[0]; // Move rook to d8
+          board[0] = null; // Remove rook from a8
+        }
+      }
     }
 
     currentTurn = 'white';
