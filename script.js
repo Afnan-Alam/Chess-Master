@@ -247,8 +247,6 @@ function handleSquareClick(e) {
       
       if (index == enPassantSquare){
         let pawnCapIndex = board[index].color === 'white' ? index + 8 : index - 8;
-        console.log("Board Index: ", board[index]);
-        console.log("pawnCapIndex: ", pawnCapIndex);
         board[pawnCapIndex] = null;
       }
 
@@ -262,7 +260,6 @@ function handleSquareClick(e) {
     else {
       enPassantSquare = null;
     }
-    console.log ("After: ", enPassantSquare);
 
 
     // Check if king is captured
@@ -290,7 +287,6 @@ function handleSquareClick(e) {
         if (movingPiece.color === 'white') {
           if (selectedSquare === 56) whiteCastleQueenside = false; // a1 rook
           if (selectedSquare === 63) whiteCastleKingside = false; // h1 rook
-          console.log("d");
         } else {
           if (selectedSquare === 0) blackCastleQueenside = false; // a8 rook
           if (selectedSquare === 7) blackCastleKingside = false; // h8 rook
@@ -300,7 +296,6 @@ function handleSquareClick(e) {
         if (movingTo.color === 'white') {
           if (index === 56) whiteCastleQueenside = false; // a1 rook
           if (index === 63) whiteCastleKingside = false; // h1 rook
-          console.log("e");
         } else {
           if (index === 0) blackCastleQueenside = false; // a8 rook
           if (index === 7) blackCastleKingside = false; // h8 rook
@@ -312,7 +307,6 @@ function handleSquareClick(e) {
       if (movingPiece.color === 'white') {
         whiteCastleKingside = false;
         whiteCastleQueenside = false;
-        console.log("f");
       } else {
         blackCastleKingside = false;
         blackCastleQueenside = false;
@@ -445,7 +439,6 @@ function getFen() {
   if (blackCastleQueenside) fen += "q";
   if (!whiteCastleKingside && !whiteCastleQueenside && !blackCastleKingside && !blackCastleQueenside) fen += "-"
   fen += " - 0 1";
-  console.log(fen);
   return fen;
 }
 
@@ -578,8 +571,6 @@ function generateMoves(i, piece, ignoreKingCheck = false) {
     }
     //Castling Moves
     if (!ignoreKingCheck && piece.color === 'white' && i === 60) {
-      console.log("Hey");
-      console.log(whiteCastleKingside, !board[61], !board[62], !isSquareAttacked(60, 'black'), !isSquareAttacked(61, 'black'), !isSquareAttacked(62, 'black'));
       if (whiteCastleKingside && !board[61] && !board[62] && !isSquareAttacked(60, 'black') && !isSquareAttacked(61, 'black') && !isSquareAttacked(62, 'black')){
         directions.push(62); // Kingside castle
       }
@@ -631,7 +622,6 @@ function botMove() {
     //hard: Play an engine move
     let fen = getFen();
     getBestMove(fen).then(move =>{
-    console.log(move);
     if (!move) return;
     const movingPiece = board[move.from];
     const capturedPiece = board[move.to];
@@ -655,7 +645,6 @@ function botMove() {
         if (movingPiece.color === 'white') {
           if (selectedSquare === 56) whiteCastleQueenside = false; // a1 rook
           if (selectedSquare === 63) whiteCastleKingside = false; // h1 rook
-          console.log("a");
         } else {
           if (selectedSquare === 0) blackCastleQueenside = false; // a8 rook
           if (selectedSquare === 7) blackCastleKingside = false; // h8 rook
@@ -665,7 +654,6 @@ function botMove() {
         if (movingTo.color === 'white') {
           if (index === 56) whiteCastleQueenside = false; // a1 rook
           if (index === 63) whiteCastleKingside = false; // h1 rook
-          console.log("b");
         } else {
           if (index === 0) blackCastleQueenside = false; // a8 rook
           if (index === 7) blackCastleKingside = false; // h8 rook
@@ -677,7 +665,6 @@ function botMove() {
       if (movingPiece.color === 'white') {
         whiteCastleKingside = false;
         whiteCastleQueenside = false;
-        console.log("c");
       } else {
         blackCastleKingside = false;
         blackCastleQueenside = false;
@@ -703,6 +690,23 @@ function botMove() {
         }
       }
     }
+    else if (movingPiece.type === 'P'){
+      
+      if (index == enPassantSquare){
+        let pawnCapIndex = board[index].color === 'white' ? index + 8 : index - 8;
+        board[pawnCapIndex] = null;
+      }
+
+      if (Math.abs(index - selectedSquare) === 16){
+        enPassantSquare = (index + selectedSquare)/2;
+      } 
+      else {
+        enPassantSquare = null;
+      }
+    } 
+    else {
+      enPassantSquare = null;
+    }
 
     currentTurn = 'white';
     renderBoard();
@@ -712,6 +716,7 @@ function botMove() {
   });
   return;    
   }
+  //-----------------------------------------------------------------------------------------------------------------------
   else if (gameMode === 'easy') {
   
   for (let i = 0; i < 64; i++) {
