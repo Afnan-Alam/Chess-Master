@@ -1,99 +1,16 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // ===== Authentication =====
-    const loginForm = document.getElementById('login-form');
-    const signupForm = document.getElementById('signup-form');
-    const authDiv = document.getElementById('auth');
-    const gameDiv = document.getElementById('game');
-    const userNameSpan = document.getElementById('user-name');
-    const depth = 10;
-    const popup = document.getElementById('game-over-popup');
-    const moveKingInCheckPopup = document.getElementById('moveKingInCheck-popup');
-    const illegalMovePopup = document.getElementById('illegalMove-popup');
+import wK from './piecePics/wK.png';
+import wQ from './piecePics/wQ.png';
+import wR from './piecePics/wR.png';
+import wB from './piecePics/wB.png';
+import wN from './piecePics/wN.png';
+import wP from './piecePics/wP.png';
+import bK from './piecePics/bK.png';
+import bQ from './piecePics/bQ.png';
+import bR from './piecePics/bR.png';
+import bB from './piecePics/bB.png';
+import bN from './piecePics/bN.png';
+import bP from './piecePics/bP.png';
 
-    // LOG IN AND SIGN UP UI
-    
-    // User Accounts are stored in LocalStorage.
-    function login(username, password) {
-      let storedUser = localStorage.getItem(username);
-      if (storedUser) {
-        let userData = JSON.parse(storedUser);
-        if (userData.password === password) {
-          return true;
-        }
-      }
-      return false;
-    }
-    
-    function signup(username, password) {
-      if (localStorage.getItem(username)) {
-        alert("Username already exists!");
-        return false;
-      }
-      localStorage.setItem(username, JSON.stringify({ password: password }));
-      return true;
-    }
-    
-    //Logic for logging into the chess website. If it is successful, the transition to the game is called.
-    loginForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const username = document.getElementById('login-username').value;
-      const password = document.getElementById('login-password').value;
-      if (login(username, password)) {
-        startGame(username);
-      } else {
-        alert("Login failed. Check your credentials.");
-      }
-    });
-    
-
-    //Logic for creating a new account in the website. 
-    //Need to add logic for when username is new username is already taken
-    signupForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const username = document.getElementById('signup-username').value;
-      const password = document.getElementById('signup-password').value;
-      if (signup(username, password)) {
-        alert("Sign up successful! Please log in.");
-      }
-    });
-    
-
-
-
-
-
-
-
-
-
-
-
-
-    //transition to start the game. Hides the login/signup div and shows the gae div
-    function startGame(username) {
-      authDiv.style.display = 'none';
-      gameDiv.style.display = 'block';
-      userNameSpan.textContent = username;
-    }
-    function gameOver() {
-      popup.style.display = 'flex';
-      document.getElementById('close-popup').addEventListener('click', () => {
-        popup.style.display = 'none';
-      });
-    }
-    function moveToCheck() {
-      moveKingInCheckPopup.style.display = 'flex';
-      document.getElementById('moveIntoCheck-popup').addEventListener('click', () => {
-        moveKingInCheckPopup.style.display = 'none';
-      });
-    }
-    function illegalMoveCSS() {
-      illegalMovePopup.style.display = 'flex';
-      document.getElementById('illegalMove-popup').addEventListener('click', () => {
-        illegalMovePopup.style.display = 'none';
-      });
-    }
-    
     // ===== Chess Game Variables and Functions =====
     let board = [];
     let currentTurn = 'white'; // white starts
@@ -102,25 +19,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let whiteKingIndex = 60;
     let blackKingIndex = 4;
+    const depth = 10;
+    let totalMoves = 0; // Total moves made in the game, used for move count display
+
 
     let selectedMoves = [];
     let whiteCastleKingside = true;
     let whiteCastleQueenside = true;
     let blackCastleKingside = true;
     let blackCastleQueenside = true;
+    
 
     let enPassantSquare = null;
-    
+  
     const pieceSymbols = {
-      'K_white': 'piecePics/wK.png', 'Q_white': 'piecePics/wQ.png', 'R_white': 'piecePics/wR.png', 'B_white': 'piecePics/wB.png', 'N_white': 'piecePics/wN.png', 'P_white': 'piecePics/wP.png',
-      'K_black': 'piecePics/bK.png', 'Q_black': 'piecePics/bQ.png', 'R_black': 'piecePics/bR.png', 'B_black': 'piecePics/bB.png', 'N_black': 'piecePics/bN.png', 'P_black': 'piecePics/bP.png'
+      'K_white': wK, 'Q_white': wQ, 'R_white': wR, 'B_white': wB, 'N_white': wN, 'P_white': wP,
+      'K_black': bK, 'Q_black': bQ, 'R_black': bR, 'B_black': bB, 'N_black': bN, 'P_black': bP   
     };
     const pieceVal = {
       'N':3,'Q':9,'R':5, 'B':3,'K':100, 'P':1
     };
-    
-    // Initialzie the starting board
-    function initBoard() {
+
+export function initBoard(gameModeParam) {
+    selectedMoves = [];
+    whiteCastleKingside = true;
+    whiteCastleQueenside = true;
+    blackCastleKingside = true;
+    blackCastleQueenside = true;
+    enPassantSquare = null;
+    selectedSquare = null;
+    totalMoves = 0;
+    currentTurn = 'white';
+
+      gameMode = gameModeParam;
       board = new Array(64).fill(null);
 
       //Each piece is stored as a JavaScript object
@@ -152,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Render the chess board inside the #chess-board div
-    function renderBoard() {
+export function renderBoard() {
       const boardDiv = document.getElementById('chess-board');
       //If the board was called before, this would delete all the previous info on the board and start from scratch
       boardDiv.innerHTML = '';
@@ -167,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         square.classList.add((row + col) % 2 === 0 ? 'light' : 'dark');
         square.dataset.index = i;
         if (selectedSquare === i) {
-          square.style.outline = '3px solid red';
+          square.classList.add('highlight-selected');
         }
         const piece = board[i];
         if (piece) {
@@ -188,14 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       document.getElementById('game-info').textContent =
         currentTurn.charAt(0).toUpperCase() + currentTurn.slice(1) + "'s turn";
+      totalMoves += 0.25;
+      document.getElementById('moves-number').textContent =
+        Math.floor(totalMoves) + ' moves made';
     }
-    
-    // Handle clicks on a square: select a piece or attempt a move.
+
 function handleSquareClick(e) {
   const index = parseInt(e.currentTarget.dataset.index);
   const piece = board[index];
+  const square = e.currentTarget;
 
-  moveKingInCheckPopup.style.display = 'none';
+  // moveKingInCheckPopup.style.display = 'none';
 
   if (selectedSquare === null) {
     if (piece && piece.color === currentTurn) {
@@ -343,6 +277,7 @@ function handleSquareClick(e) {
   }
 }
 
+
 function legal(from, to) {
   let test = generateMoves(from, board[from]);
   return test.includes(to);
@@ -391,19 +326,19 @@ function points(piece){
   return 0;
 }
 
-function eval(){
-  let eval = 0;
+function evaluateBoard(){
+  let evaluation = 0;
   for (let i = 0; i<64;i++){
     if (board[i]){
       if(board[i].color === botColor()){
-        eval += points(board[i]);
+        evaluation += points(board[i]);
       }
       else{
-        eval -= points(board[i]);
+        evaluation -= points(board[i]);
       }
     }
   }
-  return eval;
+  return evaluation;
 }
 
 function getFen() {
@@ -615,7 +550,7 @@ async function getBestMove(fen){
 // A simple bot move function
 function botMove() {
   let possibleMoves = [];
-  let currEval = eval(board);
+  let currEval = evaluateBoard(board);
   let bestMove = null;
   let maxEval = currEval;
   if (gameMode === 'hard') {
@@ -749,6 +684,7 @@ function botMove() {
   }
   
   if (possibleMoves.length > 0) {
+    let moveToDo;
     
     if (bestMove == null){
       moveToDo = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
@@ -764,6 +700,7 @@ function botMove() {
       renderBoard();
     }
     else{
+      enPassantSquare = null;
       board[moveToDo.to] = board[moveToDo.from];
       board[moveToDo.from] = null;
       currentTurn = 'white';
@@ -781,24 +718,35 @@ function botMove() {
 
 
 
-// ===== Game Mode Selection =====
-document.getElementById('sandbox-btn').addEventListener('click', () => {
-  gameMode = 'sandbox';
-  startChessGame();
-});
-document.getElementById('easy-btn').addEventListener('click', () => {
-  gameMode = 'easy';
-  startChessGame();
-});
-document.getElementById('hard-btn').addEventListener('click', () => {
-  gameMode = 'hard';
-  startChessGame();
-});
+  
 
-function startChessGame() {
-  initBoard();
-  currentTurn = 'white';
-  selectedSquare = null;
-  renderBoard();
+
+export function gameOver() {
+  //document.addEventListener('DOMContentLoaded', () => {
+    const popup = document.getElementById('game-over-popup');
+    popup.style.display = 'flex';
+    document.getElementById('close-popup').addEventListener('click', () => {
+      popup.style.display = 'none';
+    });
+  //});
 }
-});
+function moveToCheck() {
+  //document.addEventListener('DOMContentLoaded', () => {
+    const moveKingInCheckPopup = document.getElementById('moveKingInCheck-popup');
+    moveKingInCheckPopup.style.display = 'flex';
+    document.getElementById('moveIntoCheck-popup').addEventListener('click', () => {
+      moveKingInCheckPopup.style.display = 'none';
+    });
+  //});
+}
+function illegalMoveCSS() {
+  //document.addEventListener('DOMContentLoaded', () => {
+    const illegalMovePopup = document.getElementById('illegalMove-popup');
+    illegalMovePopup.style.display = 'flex';
+    document.getElementById('illegalMove-popup').addEventListener('click', () => {
+      illegalMovePopup.style.display = 'none';
+    });
+  //});
+}
+    
+    // Handle clicks on a square: select a piece or attempt a move.
