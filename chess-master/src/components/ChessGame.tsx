@@ -230,11 +230,11 @@ const ChessGame: React.FC<ChessGameProps> = ({ gameMode, userName, onBack }) => 
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">White:</p>
-                  <div className="text-lg text-slate-500">-</div>
+                  <div id="white-captured" className="text-lg text-slate-500"></div>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Black:</p>
-                  <div className="text-lg text-slate-500">-</div>
+                  <div id="black-captured" className="text-lg text-slate-500"></div>
                 </div>
               </div>
             </div>

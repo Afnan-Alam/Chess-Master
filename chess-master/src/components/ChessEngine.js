@@ -50,6 +50,10 @@ export function initBoard(gameModeParam) {
     selectedSquare = null;
     totalMoves = 0;
     currentTurn = 'white';
+    document.getElementById('black-captured').textContent === '-';
+    document.getElementById('white-captured').textContent === '-';
+    document.getElementById('moves-number').textContent = '0 moves made';
+
 
       gameMode = gameModeParam;
       board = new Array(64).fill(null);
@@ -120,8 +124,6 @@ export function renderBoard() {
       document.getElementById('game-info').textContent =
         currentTurn.charAt(0).toUpperCase() + currentTurn.slice(1) + "'s turn";
       totalMoves += 0.25;
-      document.getElementById('moves-number').textContent =
-        Math.floor(totalMoves) + ' moves made';
     }
 
 function handleSquareClick(e) {
@@ -266,7 +268,25 @@ function handleSquareClick(e) {
         }
       }
     }
-    
+    document.getElementById('moves-number').textContent = Math.floor(totalMoves) + ' moves made';
+    if (movingTo){
+      if (currentTurn !== 'white') {
+        if (document.getElementById('white-captured').textContent === '') {
+          document.getElementById('white-captured').textContent = movingTo.type;
+        }
+        else {
+        document.getElementById('white-captured').textContent += ", " + movingTo.type;
+        }
+      }
+      else {
+      if (document.getElementById('black-captured').textContent === '') {
+        document.getElementById('black-captured').textContent = movingTo.type;
+      }
+      else {
+        document.getElementById('black-captured').textContent += ", " + movingTo.type
+      }
+      }
+    }
     selectedMoves = [];
     renderBoard();
 
@@ -643,6 +663,16 @@ function botMove() {
       enPassantSquare = null;
     }
 
+    if (capturedPiece) {
+        if (document.getElementById('black-captured').textContent === '') {
+          document.getElementById('black-captured').textContent = capturedPiece.type;
+        }
+        else {
+          document.getElementById('black-captured').textContent += ", " + capturedPiece.type;
+        }
+    }
+    
+
     currentTurn = 'white';
     renderBoard();
     if (checkMate()){
@@ -692,6 +722,7 @@ function botMove() {
     else{
       moveToDo = bestMove;
     }
+    let capturedPiece = board[moveToDo.to];
     if (board[moveToDo.to] && board[moveToDo.to].type === 'K'){
       gameOver();
       board[moveToDo.to] = board[moveToDo.from];
@@ -707,6 +738,14 @@ function botMove() {
       if (checkMate()){
         gameOver();
       }
+      if (capturedPiece) {
+        if (document.getElementById('black-captured').textContent === '') {
+          document.getElementById('black-captured').textContent = capturedPiece.type;
+        }
+        else {
+          document.getElementById('black-captured').textContent += ", " + capturedPiece.type;
+        }
+    }
       renderBoard();        
     }
   }
