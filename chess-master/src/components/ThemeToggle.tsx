@@ -1,7 +1,6 @@
-
-import React from 'react';
-import { Moon, Sun } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
+import React from "react";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme();
@@ -13,14 +12,14 @@ const ThemeToggle = () => {
       aria-label="Toggle theme"
     >
       <div className="relative w-6 h-6">
-        <Sun 
+        <Sun
           className={`absolute inset-0 w-6 h-6 text-white transition-all duration-300 ${
-            theme === 'light' ? 'opacity-100 rotate-0' : 'opacity-0 rotate-180'
+            theme === "light" ? "opacity-100 rotate-0" : "opacity-0 rotate-180"
           }`}
         />
-        <Moon 
+        <Moon
           className={`absolute inset-0 w-6 h-6 text-slate-200 transition-all duration-300 ${
-            theme === 'dark' ? 'opacity-100 rotate-0' : 'opacity-0 -rotate-180'
+            theme === "dark" ? "opacity-100 rotate-0" : "opacity-0 -rotate-180"
           }`}
         />
       </div>

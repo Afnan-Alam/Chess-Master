@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { initBoard, handleMove, generateMoves } from '@/components/ChessEngine';
+import React, { useEffect, useState } from "react";
+import { initBoard, handleMove, generateMoves } from "@/components/ChessEngine";
 
 const ChessBoard: React.FC = () => {
   const [board, setBoard] = useState(initBoard());
@@ -28,8 +28,8 @@ const ChessBoard: React.FC = () => {
           <div
             key={i}
             className={`w-full h-full flex items-center justify-center ${
-              isLight ? 'bg-amber-100' : 'bg-amber-300'
-            } ${highlighted.includes(i) ? 'ring-2 ring-red-500' : ''}`}
+              isLight ? "bg-amber-100" : "bg-amber-300"
+            } ${highlighted.includes(i) ? "ring-2 ring-red-500" : ""}`}
             onClick={() => onSquareClick(i)}
           >
             {piece && (
