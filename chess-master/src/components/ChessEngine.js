@@ -32,6 +32,9 @@ let blackCastleQueenside = true;
 
 let enPassantSquare = null;
 
+const userName = userService.getCurrentUser();
+let userStats = userService.getUserStats(userName);
+
 const pieceSymbols = {
   K_white: wK,
   Q_white: wQ,
@@ -212,7 +215,7 @@ function handleSquareClick(e) {
 
     // Check if king is captured
     if (piece && piece.type === "K") {
-      let userName = userService.getUserStats(userName);
+       
       userService.updateUserStats(userName, {
         gamesPlayed: userStats.gamesPlayed + 1,
         gamesWon: userStats.gamesWon + 1,
@@ -232,7 +235,7 @@ function handleSquareClick(e) {
     currentTurn = currentTurn === "white" ? "black" : "white";
 
     if (checkMate()) {
-      let userName = userService.getUserStats(userName);
+       
       userService.updateUserStats(userName, {
         gamesPlayed: userStats.gamesPlayed + 1,
         gamesWon: userStats.gamesWon + 1,
@@ -672,7 +675,7 @@ function botMove() {
       }
 
       if (capturedPiece && capturedPiece.type === "K") {
-        let userName = userService.getUserStats(userName);
+         
         userService.updateUserStats(userName, {
           gamesPlayed: userStats.gamesPlayed + 1,
           gamesWon: userStats.gamesWon,
@@ -765,7 +768,7 @@ function botMove() {
       currentTurn = "white";
       renderBoard();
       if (checkMate()) {
-        let userName = userService.getUserStats(userName);
+         
         userService.updateUserStats(userName, {
           gamesPlayed: userStats.gamesPlayed + 1,
           gamesWon: userStats.gamesWon,
@@ -793,7 +796,7 @@ function botMove() {
           //Here
 
           if (board[target] && board[target].type === "K") {
-            let userName = userService.getUserStats(userName);
+             
             userService.updateUserStats(userName, {
               gamesPlayed: userStats.gamesPlayed + 1,
               gamesWon: userStats.gamesWon,
@@ -825,7 +828,7 @@ function botMove() {
       }
       let capturedPiece = board[moveToDo.to];
       if (board[moveToDo.to] && board[moveToDo.to].type === "K") {
-        let userName = userService.getUserStats(userName);
+         
         userService.updateUserStats(userName, {
           gamesPlayed: userStats.gamesPlayed + 1,
           gamesWon: userStats.gamesWon,
@@ -842,7 +845,7 @@ function botMove() {
         board[moveToDo.from] = null;
         currentTurn = "white";
         if (checkMate()) {
-          let userName = userService.getUserStats(userName);
+           
           userService.updateUserStats(userName, {
             gamesPlayed: userStats.gamesPlayed + 1,
             gamesWon: userStats.gamesWon,
@@ -862,7 +865,7 @@ function botMove() {
         renderBoard();
       }
     } else {
-      let userName = userService.getUserStats(userName);
+       
       userService.updateUserStats(userName, {
         gamesPlayed: userStats.gamesPlayed + 1,
         gamesWon: userStats.gamesWon + 1,
@@ -875,7 +878,7 @@ function botMove() {
 
 export function resign() {
   // Logic to handle resigning the game
-  let userName = userService.getUserStats(userName);
+   
   userService.updateUserStats(userName, {
     gamesPlayed: userStats.gamesPlayed + 1,
     gamesWon: userStats.gamesWon,

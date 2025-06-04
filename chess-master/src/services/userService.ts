@@ -1,3 +1,5 @@
+import { clear } from "console";
+
 export interface UserData {
   username: string;
   password: string;
@@ -12,6 +14,8 @@ export interface LoginCredentials {
 }
 
 const USERS_KEY = 'chess-users';
+const CURRENT_USER_KEY = 'current-user';
+
 
 export const userService = {
   // Get all users from localStorage
@@ -49,11 +53,17 @@ export const userService = {
 
   // Login user
   login(credentials: LoginCredentials): UserData | null {
-    const users = this.getAllUsers();
-    const user = users.find(
-      u => u.username === credentials.username && u.password === credentials.password
-    );
-    return user || null;
+  const users = this.getAllUsers();
+  const user = users.find(
+    u => u.username === credentials.username && u.password === credentials.password
+  );
+
+  if (user) {
+    this.setCurrentUser(user.username);
+    return user;
+  }
+
+  return null;
   },
 
   // Update user stats
@@ -81,5 +91,16 @@ export const userService = {
     }
     
     return null;
+  },
+
+  setCurrentUser(username: string): void {
+    localStorage.setItem(CURRENT_USER_KEY, username);
+  },
+
+  getCurrentUser(): string | null {
+    return localStorage.getItem(CURRENT_USER_KEY);
+  },
+  clearCurrentUser(): void {
+    localStorage.removeItem(CURRENT_USER_KEY);
   }
 };
