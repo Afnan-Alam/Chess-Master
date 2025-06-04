@@ -216,7 +216,6 @@ function handleSquareClick(e) {
 
     // Check if king is captured
     if (piece && piece.type === "K") {
-       
       userService.updateUserStats(userName, {
         gamesPlayed: userStats.gamesPlayed + 1,
         gamesWon: userStats.gamesWon + 1,
@@ -236,7 +235,6 @@ function handleSquareClick(e) {
     currentTurn = currentTurn === "white" ? "black" : "white";
 
     if (checkMate()) {
-       
       userService.updateUserStats(userName, {
         gamesPlayed: userStats.gamesPlayed + 1,
         gamesWon: userStats.gamesWon + 1,
@@ -316,7 +314,11 @@ function handleSquareClick(e) {
         }
       }
     }
-    document.getElementById("last-move").textContent = moveToText(movingPiece, selectedSquare, index);
+    document.getElementById("last-move").textContent = moveToText(
+      movingPiece,
+      selectedSquare,
+      index
+    );
     selectedMoves = [];
     renderBoard();
 
@@ -341,7 +343,7 @@ function moveToText(piece, selectedSquare, index) {
     }
   } else if (pieceSymbol === "k" && selectedSquare === 4) {
     if (index === 6) {
-      return "o-o"; // Kingside castle  
+      return "o-o"; // Kingside castle
     } else if (index === 2) {
       return "o-o-o"; // Queenside castle
     }
@@ -702,7 +704,6 @@ function botMove() {
       }
 
       if (capturedPiece && capturedPiece.type === "K") {
-         
         userService.updateUserStats(userName, {
           gamesPlayed: userStats.gamesPlayed + 1,
           gamesWon: userStats.gamesWon,
@@ -791,13 +792,15 @@ function botMove() {
             ", " + capturedPiece.type;
         }
       }
-      document.getElementById("last-move").textContent = moveToText(movingPiece, selectedSquare, index);
-
+      document.getElementById("last-move").textContent = moveToText(
+        movingPiece,
+        selectedSquare,
+        index
+      );
 
       currentTurn = "white";
       renderBoard();
       if (checkMate()) {
-         
         userService.updateUserStats(userName, {
           gamesPlayed: userStats.gamesPlayed + 1,
           gamesWon: userStats.gamesWon,
@@ -825,7 +828,6 @@ function botMove() {
           //Here
 
           if (board[target] && board[target].type === "K") {
-             
             userService.updateUserStats(userName, {
               gamesPlayed: userStats.gamesPlayed + 1,
               gamesWon: userStats.gamesWon,
@@ -855,9 +857,9 @@ function botMove() {
       } else {
         moveToDo = bestMove;
       }
+      let movingPiece = board[moveToDo.from];
       let capturedPiece = board[moveToDo.to];
       if (board[moveToDo.to] && board[moveToDo.to].type === "K") {
-         
         userService.updateUserStats(userName, {
           gamesPlayed: userStats.gamesPlayed + 1,
           gamesWon: userStats.gamesWon,
@@ -874,7 +876,6 @@ function botMove() {
         board[moveToDo.from] = null;
         currentTurn = "white";
         if (checkMate()) {
-           
           userService.updateUserStats(userName, {
             gamesPlayed: userStats.gamesPlayed + 1,
             gamesWon: userStats.gamesWon,
@@ -891,11 +892,14 @@ function botMove() {
               ", " + capturedPiece.type;
           }
         }
-        document.getElementById("last-move").textContent = moveToText(movingPiece, selectedSquare, index);
+        document.getElementById("last-move").textContent = moveToText(
+          movingPiece,
+          moveToDo.from,
+          moveToDo.to
+        );
         renderBoard();
       }
     } else {
-       
       userService.updateUserStats(userName, {
         gamesPlayed: userStats.gamesPlayed + 1,
         gamesWon: userStats.gamesWon + 1,
@@ -908,7 +912,7 @@ function botMove() {
 
 export function resign() {
   // Logic to handle resigning the game
-   
+
   userService.updateUserStats(userName, {
     gamesPlayed: userStats.gamesPlayed + 1,
     gamesWon: userStats.gamesWon,
