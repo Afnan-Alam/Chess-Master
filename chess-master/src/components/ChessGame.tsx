@@ -271,10 +271,10 @@ const ChessGame: React.FC<ChessGameProps> = ({
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
-                Move History
+                Last Move
               </h3>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center">
+                <p id="last-move" className="text-sm text-slate-500 dark:text-slate-400 text-center">
                   No moves yet
                 </p>
               </div>

@@ -315,6 +315,7 @@ function handleSquareClick(e) {
         }
       }
     }
+    document.getElementById("last-move").textContent = moveToText(movingPiece, selectedSquare, index);
     selectedMoves = [];
     renderBoard();
 
@@ -323,6 +324,31 @@ function handleSquareClick(e) {
       setTimeout(botMove, 500);
     }
   }
+}
+
+function moveToText(piece, selectedSquare, index) {
+  let pieceSymbol = piece.type === "P" ? "" : piece.type;
+  if (piece.color === "black") {
+    pieceSymbol = pieceSymbol.toLowerCase();
+  }
+
+  if (pieceSymbol === "K" && selectedSquare === 60) {
+    if (index === 62) {
+      return "O-O"; // Kingside castle
+    } else if (index === 58) {
+      return "O-O-O"; // Queenside castle
+    }
+  } else if (pieceSymbol === "k" && selectedSquare === 4) {
+    if (index === 6) {
+      return "o-o"; // Kingside castle  
+    } else if (index === 2) {
+      return "o-o-o"; // Queenside castle
+    }
+  }
+
+  const col = String.fromCharCode(97 + (index % 8)); // 'a' + column index
+  const row = 8 - Math.floor(index / 8); // 8 - row index
+  return pieceSymbol + col + row;
 }
 
 function legal(from, to) {
@@ -764,6 +790,8 @@ function botMove() {
             ", " + capturedPiece.type;
         }
       }
+      document.getElementById("last-move").textContent = moveToText(movingPiece, selectedSquare, index);
+
 
       currentTurn = "white";
       renderBoard();
@@ -862,6 +890,7 @@ function botMove() {
               ", " + capturedPiece.type;
           }
         }
+        document.getElementById("last-move").textContent = moveToText(movingPiece, selectedSquare, index);
         renderBoard();
       }
     } else {
