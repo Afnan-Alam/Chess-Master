@@ -71,6 +71,7 @@ export function initBoard(gameModeParam) {
   document.getElementById("black-captured").textContent === "-";
   document.getElementById("white-captured").textContent === "-";
   document.getElementById("moves-number").textContent = "0 moves made";
+  document.getElementById("last-move").textContent = "No moves yet";
 
   gameMode = gameModeParam;
   board = new Array(64).fill(null);
