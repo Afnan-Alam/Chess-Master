@@ -2,6 +2,7 @@
 
 An interactive and modern online chess game featuring a sleek UI, custom piece movement logic, and AI integration via a chess engine API. Built using React, Vite, TailwindCSS, and JavaScript.
 
+Visit Live Website: https://chess-master-one.vercel.app/
 ---
 
 ## Tech Stack
