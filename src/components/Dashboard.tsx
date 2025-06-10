@@ -37,6 +37,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       icon: Users,
       gradient: "from-blue-500 to-blue-600",
       onClick: () => onGameModeSelect("sandbox"),
+      shadowColor: "#2196f3", // Blue-500
     },
     {
       title: "Easy Mode",
@@ -46,6 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       difficulty: "Beginner",
       gradient: "from-green-500 to-green-600",
       onClick: () => onGameModeSelect("easy"),
+      shadowColor: "#4caf50", // Green-500
     },
     {
       title: "Hard Mode",
@@ -63,6 +65,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       difficulty: "Expert",
       gradient: "from-red-500 to-red-600",
       onClick: () => onGameModeSelect("hard"),
+      shadowColor: "#f44336", // Red-500
     },
   ];
 
